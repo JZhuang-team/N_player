@@ -51,16 +51,16 @@ def objective_prob(Y, _nLayers):
     global obj2
     f = [None] * _nLayers
     for i in range(len(f)):
-        f[i] = np.exp(-1 * sum([obj2.gamma[i-k] * obj2.theta[k] * Y[k] for k in range(i+1)]))
-    raw_risk = [_s * _beta * _alpha for _s, _beta, _alpha in zip(obj2.s, obj2.beta, obj2.alpha)]
+        f[i] = np.exp(-1 * sum([obj2.gamma[i-k] * obj2.theta[k] * Y[k] for k in range(i+1)]))#vul
+    raw_risk = [_s * _beta * _alpha for _s, _beta, _alpha in zip(obj2.s, obj2.beta, obj2.alpha)]#risk
     return sum(a * b for a, b in zip(raw_risk, f))
 
 def objective_stra(Y, _nLayers):
     global obj2
     f = [None] * _nLayers
     for i in range(len(f)):
-        f[i] = np.exp(-1 * sum([obj2.gamma[i-k] * obj2.theta[k] * Y[k] for k in range(i+1)]))
-    raw_risk = [_s * _alpha for _s, _alpha in zip(obj2.s, obj2.alpha)]
+        f[i] = np.exp(-1 * sum([obj2.gamma[i-k] * obj2.theta[k] * Y[k] for k in range(i+1)]))#vul
+    raw_risk = [_s * _alpha for _s, _alpha in zip(obj2.s, obj2.alpha)]#risk
     return max(a * b for a, b in zip(raw_risk, f))
 
 def constraint(Y, obj2):
@@ -210,9 +210,9 @@ def index():
             total_layers=total_layers,
             C_bar_init=C_bar_init,
             model=display_model,
-            solutions=str(display_solutions),
-            s=str(obj2.s),
-            beta=str(obj2.beta),
+            solutions=str(display_solutions),#invest
+            s=str(obj2.s),#conseques
+            beta=str(obj2.beta),#threat
             alpha=str(obj2.alpha),
             theta=str(obj2.theta),
             gamma=str(obj2.gamma),
