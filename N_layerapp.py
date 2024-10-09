@@ -14,7 +14,7 @@ import os
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
-# comment
+
 
 
 # Initialization functions
