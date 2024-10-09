@@ -284,13 +284,15 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <!-- Loop through total layers and dynamically generate rows -->
+                                    {% for i in range(total_layers) %}
                                     <tr>
-                                        <td>1</td>
-                                        <td>Low</td>
-                                        <td>High</td>
-                                        <td>Medium</td>
+                                        <td>{{ i+1 }}</td>
+                                        <td>{{ s[i] }}</td>   <!-- Consequence (s) -->
+                                        <td>{{ alpha[i] }}</td> <!-- Vulnerability (alpha) -->
+                                        <td>{{ beta[i]| round(2) }}</td>  <!-- Threat (beta) -->
                                     </tr>
-                                    <!-- Add more rows as necessary -->
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>

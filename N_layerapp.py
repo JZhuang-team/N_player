@@ -211,9 +211,9 @@ def index():
             C_bar_init=C_bar_init,
             model=display_model,
             solutions=str(display_solutions),#invest
-            s=str(obj2.s),#conseques
-            beta=str(obj2.beta),#threat
-            alpha=str(obj2.alpha),
+            s=obj2.s,#conseques
+            beta=obj2.beta,#threat
+            alpha=obj2.alpha, # vulnerability
             theta=str(obj2.theta),
             gamma=str(obj2.gamma),
             cost=str(obj2.cost),
