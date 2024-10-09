@@ -245,7 +245,7 @@
                             </div>
                         </div>
                     </div>
-                    <!--
+                    
                     <div class="container">
                         <div class="main-content">
                             <div class="card">
@@ -253,15 +253,15 @@
                                     <h2 class="text-center mb-0">Model Results</h2>
                                 </div>
                                 <div class="card-body">
-                                    <!-- Nested boxes container --><!--
+                                    <!-- Nested boxes container -->
                                     <div class="nested-boxes-container"></div>
-                                    <!-- Table container --><!--
+                                    <!-- Table container -->
                                     <div class="table-container" id="tableContainer"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                -->
+                
 
                     
                         <!-- Optimization Input Table (Positioned above) -->
@@ -379,7 +379,7 @@
             }
     </script>
     <script>
-        // Function to dynamically create nested boxes
+    // Function to dynamically create nested boxes
         function updateNestedBoxes(layerCount) {
             const container = document.querySelector('.nested-boxes-container');
             container.innerHTML = ''; // Clear existing boxes
@@ -394,23 +394,27 @@
                 // Add more layer data if needed
             ];
 
-            function updateNestedBoxes(layerCount) {
-                const container = document.querySelector('.nested-boxes-container');
-                container.innerHTML = ''; // Clear existing boxes
-                let currentSize = 300; // Initial size for the largest box
+            for (let i = 0; i < layerCount; i++) {
+                const box = document.createElement('div');
+                box.style.width = `${currentSize}px`;
+                box.style.height = `${currentSize}px`;
+                box.style.backgroundColor = getRandomColor();
+                box.innerText = `Target`;
+                box.className = 'tooltip-box';
+                container.appendChild(box);
 
-                for (let i = 0; i < layerCount; i++) {
-                    const box = document.createElement('div');
-                    box.style.width = `${currentSize}px`;
-                    box.style.height = `${currentSize}px`;
-                    box.style.backgroundColor = getRandomColor();
-                    box.innerText = `Layer ${i + 1}`;
-                    box.className = 'tooltip-box';
-                    container.appendChild(box);
-
-                    currentSize -= 75; // Adjust size for each nested box
+                // Event listener to create a table on box click
+                box.onclick = function() {
+                    if (i<=4){
+                        createTable(layerData[i], i + 1);
                     }
-                }
+                    else{
+                        none
+                    }
+                };
+
+                currentSize -= 50; // Decrease size for each nested box
+            }
         }
 
         // Function to create a dynamic table based on layer data
@@ -459,28 +463,35 @@
             return color;
         }
 
+        // Initialize boxes with dynamic table functionality
         window.onload = function() {
+            const totalLayers = 5;  // Set the total number of layers dynamically if needed
+            updateNestedBoxes(totalLayers);
+        };
+               
+        //window.onload = function() {
             // Retrieve the total_layers slider and input box
-            const totalLayersSlider = document.getElementById('total_layers');
-            const totalLayersInput = document.getElementById('total_layers_input');
-            const solveButton = document.getElementById('solveButton'); // The "Solve" button
+        //    const totalLayersSlider = document.getElementById('total_layers');
+        //    const totalLayersInput = document.getElementById('total_layers_input');
+        //    const solveButton = document.getElementById('solveButton'); // The "Solve" button
 
             // Synchronize slider and input box
-            totalLayersSlider.oninput = function() {
-                totalLayersInput.value = totalLayersSlider.value;
-                const totalLayers = parseInt(totalLayersSlider.value);
-                updateNestedBoxes(totalLayers);  // Sync input box with slider
-            };
+        //    totalLayersSlider.oninput = function() {
+        //        totalLayersInput.value = totalLayersSlider.value;
+        //        const totalLayers = parseInt(totalLayersSlider.value);
+        //        updateNestedBoxes(totalLayers);  // Sync input box with slider
+        //    };
 
-            totalLayersInput.oninput = function() {
-                totalLayersSlider.value = totalLayersInput.value;
-                const totalLayers = parseInt(totalLayersSlider.value);
-                updateNestedBoxes(totalLayers);  // Sync slider with input box
-            };
+        //    totalLayersInput.oninput = function() {
+        //        totalLayersSlider.value = totalLayersInput.value;
+        //        const totalLayers = parseInt(totalLayersSlider.value);
+        //        updateNestedBoxes(totalLayers);  // Sync slider with input box
+        //    };
 
             // When the "Solve" button is clicked, update the nested boxes
             
-        };
+        //};
+    
     </script>
 
 </body>
