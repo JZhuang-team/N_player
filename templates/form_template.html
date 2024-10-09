@@ -190,7 +190,7 @@
                                     <label for="total_layers">Total Layers:</label>
                                     <div class="slider-container">
                                         <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="4" value="1" step="1" required oninput="syncSliderWithInput('total_layers', 'total_layers_input')">
-                                        <span class="slider-value" id="total_layers_value">1</span>
+                                        <span class="slider-value" id="total_layers_value">{{total_layers}}</span>
                                         <input type="number" id="total_layers_input" min="1" max="50" value="1" step="1" oninput="syncInputWithSlider('total_layers_input', 'total_layers')">
                                     </div>
                                 </div>
@@ -198,7 +198,7 @@
                                     <label for="C_bar_init">Cost:</label>
                                     <div class="slider-container">
                                         <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" required oninput="syncSliderWithInput('C_bar_init', 'C_bar_init_input')">
-                                        <span class="slider-value" id="C_bar_init_value">0</span>
+                                        <span class="slider-value" id="C_bar_init_value">{{C_bar_init}}</span>
                                         <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInputWithSlider('C_bar_init_input', 'C_bar_init')">
                                     </div>
                                 </div>

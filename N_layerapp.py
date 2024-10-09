@@ -210,15 +210,16 @@ def index():
             total_layers=total_layers,
             C_bar_init=C_bar_init,
             model=display_model,
-            solutions=str(display_solutions),#invest
-            s=obj2.s,#conseques
-            beta=obj2.beta,#threat
-            alpha=obj2.alpha, # vulnerability
+            solutions=display_solutions,#invest
+            consequence=obj2.s,#conseques
+            threat=obj2.beta,#threat
+            alpha=str(obj2.alpha),
             theta=str(obj2.theta),
             gamma=str(obj2.gamma),
             cost=str(obj2.cost),
             C_bar=str(obj2.C_bar),
-            layer_image=layer_image, consequence="0.5", vulnerability="0.56", threat="0.5")  # New parameter for layer-specific image
+            layer_image=layer_image,  vulnerability="0.56"
+            )  # New parameter for layer-specific image
 
     return render_template('form_template.html')
 
