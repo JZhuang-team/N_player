@@ -137,10 +137,12 @@
                         <input type="radio" id="prob" name="model_type" class="custom-control-input" value="prob" checked>
                         <label class="custom-control-label" for="prob">Probabilistic Model</label>
                     </div>
+                    <!--
                     <div class="custom-control custom-radio mt-2">
                         <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
                         <label class="custom-control-label" for="stra">Strategic Model</label>
                     </div>
+                -->
                 </div>
 
                 <!-- Total Layers slider -->
@@ -154,7 +156,7 @@
 
                 <!-- Cost slider -->
                 <div class="form-group">
-                    <label for="C_bar_init">Cost:</label>
+                    <label for="C_bar_init">Resource:</label>
                     <div class="slider-container">
                         <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
                         <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">

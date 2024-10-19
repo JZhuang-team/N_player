@@ -253,14 +253,18 @@
                                     <h2 class="text-center mb-0">Model Results</h2>
                                 </div>
                                 <div class="card-body">
-                                    <!-- Nested boxes container -->
-                                    <div class="nested-boxes-container"></div>
-                                    <!-- Table container -->
+                                    <div class="nested-boxes-container">
+                                        <!-- Nested boxes go here -->
+                                        <div class="box1 tooltip-box">Layer 1</div>
+                                        <div class="box2 tooltip-box">Layer 2</div>
+                                        <div class="box3 tooltip-box">Layer 3</div>
+                                        <div class="box4 tooltip-box">Layer 4</div>
+                                    </div>
+                
                                     <div class="table-container" id="tableContainer"></div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                
                 
 
                     
@@ -270,54 +274,54 @@
                         <!-- Space between the tables -->
                         
                         <div class="table-container">
-                            <h4><i class="fas fa-table"></i> Optimization Input</h4>
-                            <table class="table table-bordered custom-table">
-                                <thead>
-                                    <tr>
-                                        <th>Layer</th>
-                                        <th>Consequence</th>
-                                        <th>Vulnerability</th>
-                                        <th>Threat</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Assuming that the length of total_layers, consequence, and threat are the same -->
-                                    {% for i in range(total_layers) %}
-                                    <tr>
-                                        <td>{{ i + 1 }}</td>
-                                        <td>{{ consequence[i]| round(2) }}</td>
-                                        <td>{{ vulnerability  }}</td> <!-- Assuming vulnerability is static or can be dynamic -->
-                                        <td>{{ threat[i] | round(2)}}</td>
-                                    </tr>
-                                    {% endfor %}
-                                    <!-- Add more rows as necessary -->
-                                </tbody>
+                                <h4><i></i> Optimization Input</h4>
+                                <table class="table table-bordered custom-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Layer</th>
+                                                <th>Consequence</th>
+                                                <th>Vulnerability</th>
+                                                <th>Threat</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Assuming that the length of total_layers, consequence, and threat are the same -->
+                                            {% for i in range(total_layers) %}
+                                            <tr>
+                                                <td>{{ i + 1 }}</td>
+                                                <td>{{ consequence[i]| round(2) }}</td>
+                                                <td>{{ vulnerability[i]   }}</td> <!-- Assuming vulnerability is static or can be dynamic -->
+                                                <td>{{ threat[i] | round(2)}}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <!-- Add more rows as necessary -->
+                                        </tbody>
                         </div>
-                        <div class="spacer" style="height: 40px;"></div>
-                        <!-- Optimization Output Table (Positioned below) -->
+                            <!-- Optimization Output Table (Positioned below) -->
                         <div class="table-container">
-                            <h4><i class="fas fa-table"></i> Optimization Output</h4>
-                            <table class="table table-bordered custom-table">
-                                <thead>
-                                    <tr>
-                                        <th>Layer</th>
-                                        <th>Investment</th>
-                                        <th>Risk</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for i in range(1,total_layers+1) %}
-                                    <tr>
-                                        <td>{{i}}</td>
-                                        <td>{{solutions[i]}}</td>
-                                        <td>Low</td>
-                                    </tr>
-                                    {% endfor %}
-                                    <!-- Add more rows as necessary -->
-                                </tbody>
-                            </table>
+                            
+                            <h4><i></i> Optimization Output</h4>    
+                                <table class="table table-bordered custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Layer</th>
+                                            <th>Investment</th>
+                                            <th>Risk</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in range(1,total_layers+1) %}
+                                        <tr>
+                                            <td>{{i}}</td>
+                                            <td>{{solutions[i]}}</td>
+                                            <td>{{raw_risk[i-1]}}</td>
+                                        </tr>
+                                        {% endfor %}
+                                        <!-- Add more rows as necessary -->
+                                    </tbody>
+                                </table>
                         </div>
-                    
+                        
                     </div>
                         
                         <div class="row mt-4">
@@ -379,119 +383,117 @@
             }
     </script>
     <script>
-    // Function to dynamically create nested boxes
-        function updateNestedBoxes(layerCount) {
-            const container = document.querySelector('.nested-boxes-container');
-            container.innerHTML = ''; // Clear existing boxes
-            let currentSize = 300; // Initial size for the largest box
-
-            // Example data for each layer (you can update this with real data)
-            const layerData = [
-                { layer: 1, consequence: "Low", vulnerability: "High", threat: "Medium" },
-                { layer: 2, consequence: "Medium", vulnerability: "Medium", threat: "High" },
-                { layer: 3, consequence: "High", vulnerability: "Low", threat: "Low" },
-                { layer: 4, consequence: "Critical", vulnerability: "Critical", threat: "Critical" }
-                // Add more layer data if needed
-            ];
-
-            for (let i = 0; i < layerCount; i++) {
-                const box = document.createElement('div');
-                box.style.width = `${currentSize}px`;
-                box.style.height = `${currentSize}px`;
-                box.style.backgroundColor = getRandomColor();
-                box.innerText = `Target`;
-                box.className = 'tooltip-box';
-                container.appendChild(box);
-
-                // Event listener to create a table on box click
-                box.onclick = function() {
-                    if (i<=4){
-                        createTable(layerData[i], i + 1);
-                    }
-                    else{
-                        none
-                    }
-                };
-
-                currentSize -= 50; // Decrease size for each nested box
-            }
-        }
-
-        // Function to create a dynamic table based on layer data
-        function createTable(data, layerNumber) {
-            const tableContainer = document.getElementById('tableContainer');
-            tableContainer.innerHTML = ''; // Clear existing table if any
-
-            // Create table dynamically
-            const table = document.createElement('table');
-            table.className = 'dynamic-table';
-            const thead = document.createElement('thead');
-            const tbody = document.createElement('tbody');
-
-            // Create table headers
-            const headers = ['Layer', 'Consequence', 'Vulnerability', 'Threat'];
-            const headerRow = document.createElement('tr');
-            headers.forEach(header => {
-                const th = document.createElement('th');
-                th.innerText = header;
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-
-            // Create a row for the data
-            const dataRow = document.createElement('tr');
-            const dataArray = [layerNumber, data.consequence, data.vulnerability, data.threat];
-            dataArray.forEach(value => {
-                const td = document.createElement('td');
-                td.innerText = value;
-                dataRow.appendChild(td);
-            });
-            tbody.appendChild(dataRow);
-
-            table.appendChild(thead);
-            table.appendChild(tbody);
-            tableContainer.appendChild(table);
-        }
-
-        // Random color generator for box background
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
-
-        // Initialize boxes with dynamic table functionality
-        window.onload = function() {
-            const totalLayers = 5;  // Set the total number of layers dynamically if needed
-            updateNestedBoxes(totalLayers);
-        };
-               
-        //window.onload = function() {
-            // Retrieve the total_layers slider and input box
-        //    const totalLayersSlider = document.getElementById('total_layers');
-        //    const totalLayersInput = document.getElementById('total_layers_input');
-        //    const solveButton = document.getElementById('solveButton'); // The "Solve" button
-
-            // Synchronize slider and input box
-        //    totalLayersSlider.oninput = function() {
-        //        totalLayersInput.value = totalLayersSlider.value;
-        //        const totalLayers = parseInt(totalLayersSlider.value);
-        //        updateNestedBoxes(totalLayers);  // Sync input box with slider
-        //    };
-
-        //    totalLayersInput.oninput = function() {
-        //        totalLayersSlider.value = totalLayersInput.value;
-        //        const totalLayers = parseInt(totalLayersSlider.value);
-        //        updateNestedBoxes(totalLayers);  // Sync slider with input box
-        //    };
-
-            // When the "Solve" button is clicked, update the nested boxes
-            
-        //};
+        // Function to dynamically create nested boxes
+            function updateNestedBoxes(layerCount) {
+                const container = document.querySelector('.nested-boxes-container');
+                container.innerHTML = ''; // Clear existing boxes
+                let currentSize = 300; // Initial size for the largest box
     
+                // Example data for each layer (you can update this with real data)
+                const layerData = [
+                    { layer: 1, consequence: "Low", vulnerability: "High", threat: "Medium" },
+                    { layer: 2, consequence: "Medium", vulnerability: "Medium", threat: "High" },
+                    { layer: 3, consequence: "High", vulnerability: "Low", threat: "Low" },
+                    { layer: 4, consequence: "Critical", vulnerability: "Critical", threat: "Critical" }
+                    // Add more layer data if needed
+                ];
+    
+                for (let i = 0; i < layerCount; i++) {
+                    const box = document.createElement('div');
+                    box.style.width = `${currentSize}px`;
+                    box.style.height = `${currentSize}px`;
+                    box.style.backgroundColor = getRandomColor();
+                    box.innerText = `Target`;
+                    box.className = 'tooltip-box';
+                    container.appendChild(box);
+    
+                    // Event listener to create a table on box click
+                    box.onclick = function() {
+                        if (i<=4){
+                            createTable(layerData[i], i + 1);
+                        }
+                        else{
+                            none
+                        }
+                    };
+    
+                    currentSize -= 50; // Decrease size for each nested box
+                }
+            }
+    
+            // Function to create a dynamic table based on layer data
+            function createTable(data, layerNumber) {
+                const tableContainer = document.getElementById('tableContainer');
+                tableContainer.innerHTML = ''; // Clear existing table if any
+    
+                // Create table dynamically
+                const table = document.createElement('table');
+                table.className = 'dynamic-table';
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+    
+                // Create table headers
+                const headers = ['Layer', 'Consequence', 'Vulnerability', 'Threat'];
+                const headerRow = document.createElement('tr');
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.innerText = header;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+    
+                // Create a row for the data
+                const dataRow = document.createElement('tr');
+                const dataArray = [layerNumber, data.consequence, data.vulnerability, data.threat];
+                dataArray.forEach(value => {
+                    const td = document.createElement('td');
+                    td.innerText = value;
+                    dataRow.appendChild(td);
+                });
+                tbody.appendChild(dataRow);
+    
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                tableContainer.appendChild(table);
+            }
+    
+            // Random color generator for box background
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+    
+            // Initialize boxes with dynamic table functionality
+            window.onload = function() {
+                const totalLayers = document.getElementById('total_layers');;  // Set the total number of layers dynamically if needed
+                updateNestedBoxes(totalLayers);
+            };
+                   
+            //window.onload = function() {
+                // Retrieve the total_layers slider and input box
+            //    const totalLayersSlider = document.getElementById('total_layers');
+            //    const totalLayersInput = document.getElementById('total_layers_input');
+    
+                // Synchronize slider and input box
+            //    totalLayersSlider.oninput = function() {
+            //        totalLayersInput.value = totalLayersSlider.value;
+            //        const totalLayers = parseInt(totalLayersSlider.value);
+            //        updateNestedBoxes(totalLayers);  // Sync input box with slider
+            //    };
+    
+            //    totalLayersInput.oninput = function() {
+            //        totalLayersSlider.value = totalLayersInput.value;
+            //        const totalLayers = parseInt(totalLayersSlider.value);
+            //        updateNestedBoxes(totalLayers);  // Sync slider with input box
+            //    };
+    
+                // When the "Solve" button is clicked, update the nested boxes
+                
+            //};
     </script>
 
 </body>
