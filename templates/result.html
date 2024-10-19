@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Index Map</title>
+    <!-- Link to Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Link to Bootstrap for layout and styling -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Link to Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        /* Basic body styles */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        /* Navbar styles for the top navigation bar */
+        .navbar {
+            background-color: #343a40;
+            padding: 10px 20px;
+            color: white;
+        }
+        .navbar .nav-link {
+            color: white !important;
+        }
+
+        /* Main content area that holds the map and legend */
+        .main-content {
+            display: flex;
+            height: 100vh; /* Full height for the main content area */
+        }
+
+        /* Sidebar section that holds the legend */
+        .sidebar {
+            background-color: #ffffff;
+            width: 300px;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+        }
+        /* Sidebar header */
+        .sidebar h5 {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* Sidebar legend styles */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+
+        /* Map area section */
+        .map-area {
+            flex-grow: 1;
+            position: relative;
+            background-color: #e6e6e6;
+        }
+
+        /* Position of the top-right buttons on the map */
+        .map-area .top-right-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        /* Button styling for map options */
+        .btn-map {
+            background-color: #007bff;
+            color: white;
+            margin-right: 10px;
+        }
+
+        /* Full screen layout for the map view */
+        .map-canvas {
+            width: 100%;
+            height: 100%;
+            background-image: url('map-placeholder.jpg'); /* Placeholder for the map image */
+            background-size: cover;
+        }
+
+        /* Footer for map-related actions (like "Create Report") */
+        .map-footer {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="navbar-brand">Model Configuration</div>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item"><a href="#" class="nav-link">Model</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">About</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content: Sidebar + Map Area -->
+    <div class="main-content">
+        
+        <!-- Sidebar for the Legend and Map Controls -->
+        <div class="sidebar">
+            
+            <!-- Form container -->
+            <div class="form-container">
+                <div class="page-header">
+                    <h2></h2>
+                </div>
+
+                <!-- Model selection form -->
+                <form action="/results" method="post">
+                    <!-- Model Type selection -->
+                    <div class="form-group">
+                        <label>Model Type:</label>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="prob" name="model_type" class="custom-control-input" value="prob" checked>
+                            <label class="custom-control-label" for="prob">Probabilistic Model</label>
+                        </div>
+                        <div class="custom-control custom-radio mt-2">
+                            <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
+                            <label class="custom-control-label" for="stra">Strategic Model</label>
+                        </div>
+                    </div>
+
+                    <!-- Total Layers slider -->
+                    <div class="form-group">
+                        <label for="total_layers">Total Layers:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="10" value="1" step="1" oninput="syncSlider('total_layers')">
+                            <input type="number" id="total_layers_input" min="1" max="10" value="1" oninput="syncInput('total_layers')">
+                        </div>
+                    </div>
+
+                    <!-- Cost slider -->
+                    <div class="form-group">
+                        <label for="C_bar_init">Cost:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
+                            <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                        </div>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </form>
+            </div>
+        </div>
+        <!-- Map Area -->
+        <div class="map-area">
+            <!-- Placeholder for actual map content -->
+            <div class="map-canvas"></div>
+            <!-- Buttons for Map Controls (like switching views) -->
+            <div class="top-right-buttons">
+                <button class="btn btn-map">Return to Main</button>
+                <button class="btn btn-map">Consequence</button>
+                <button class="btn btn-map">Vulnerability</button>
+                <button class="btn btn-map">Threat</button>
+            </div>
+    
+
+            
+        </div>
+    </div>
+
+    <!-- JavaScript for Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Synchronize slider and input box for Total Layers
+        function syncSlider(id) {
+            const slider = document.getElementById(id);
+            const input = document.getElementById(id + '_input');
+            input.value = slider.value;
+        }
+
+        function syncInput(id) {
+            const input = document.getElementById(id + '_input');
+            const slider = document.getElementById(id);
+            slider.value = input.value;
+        }
+    </script>
+</body>
+</html>
