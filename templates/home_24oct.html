@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Index Map</title>
+    <!-- Link to Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Link to Bootstrap for layout and styling -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Link to Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- Link to Mapbox JS and CSS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+
+    <style>
+        /* Basic body styles */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        /* Navbar styles for the top navigation bar */
+        .navbar {
+            background-color: #343a40;
+            padding: 10px 20px;
+            color: white;
+        }
+        .navbar .nav-link {
+            color: white !important;
+        }
+
+        /* Main content area that holds the map and legend */
+        .main-content {
+            display: flex;
+            height: 100vh; /* Full height for the main content area */
+        }
+
+        /* Sidebar section that holds the legend */
+        .sidebar {
+            background-color: #ffffff;
+            width: 300px;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+        }
+
+        /* Map area section */
+        .map-area {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        /* Full screen layout for the map view */
+        .map-canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="navbar-brand">Model Configuration</div>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item"><a href="#" class="nav-link">Model</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">About</a></li>
+                <li class="nav-item"><a href="#" class="nav-link">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content: Sidebar + Map Area -->
+    <div class="main-content">
+        
+        <!-- Sidebar for the Legend and Map Controls -->
+        <div class="sidebar">
+            <!-- Your form and other content goes here -->
+        </div>
+
+        <!-- Map Area -->
+        <div class="map-area">
+            <!-- Mapbox Map Section -->
+            <div id="map" class="map-canvas"></div>
+        </div>
+    </div>
+
+    <!-- Link to Mapbox JS -->
+    <script>
+        mapboxgl.accessToken = 'Your Access Token';
+
+        // map object for Mapbox Design
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/quicksid/cm2m5sh8j001501qkeof207bc',
+            center: [-78.786058, 43.001278],
+            zoom: 18.5
+        });
+    </script>
+
+    <!-- JavaScript for Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
