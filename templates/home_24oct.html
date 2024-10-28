@@ -77,10 +77,56 @@
     <!-- Main Content: Sidebar + Map Area -->
     <div class="main-content">
         
-        <!-- Sidebar for the Legend and Map Controls -->
         <div class="sidebar">
-            <!-- Your form and other content goes here -->
+
+            <!-- Form container -->
+            <div class="form-container">
+                <div class="page-header">
+                    <h2></h2>
+                </div>
+
+                <!-- Model selection form -->
+                <form action="/results" method="post">
+                    <!-- Model Type selection -->
+                    <div class="form-group">
+                        <label>Model Type:</label>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="prob" name="model_type" class="custom-control-input" value="prob" checked>
+                            <label class="custom-control-label" for="prob">Probabilistic Model</label>
+                        </div>
+                        <!--
+                        <div class="custom-control custom-radio mt-2">
+                            <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
+                            <label class="custom-control-label" for="stra">Strategic Model</label>
+                        </div>
+                    -->
+                    </div>
+
+                    <!-- Total Layers slider -->
+                    <div class="form-group">
+                        <label for="total_layers">Total Layers:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="10" value="1" step="1" oninput="syncSlider('total_layers')">
+                            <input type="number" id="total_layers_input" min="1" max="10" value="1" oninput="syncInput('total_layers')">
+                        </div>
+                    </div>
+
+                    <!-- Cost slider -->
+                    <div class="form-group">
+                        <label for="C_bar_init">Resource:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
+                            <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                        </div>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary">Next -></button>
+                </form>
+            </div>
         </div>
+            
+            
 
         <!-- Map Area -->
         <div class="map-area">
@@ -91,7 +137,7 @@
 
     <!-- Link to Mapbox JS -->
     <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw';
+        mapboxgl.accessToken = 'pk.eyJ1IjoicXVpY2tzaWQiLCJhIjoiY2x5cm5xamk3MDhlYTJpcTdiMmNxMzlrcyJ9.jfR6jzf3I6ceNehgSem2PA';
 
         // map object for Mapbox Design
         const map = new mapboxgl.Map({
