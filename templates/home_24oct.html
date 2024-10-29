@@ -102,21 +102,27 @@
                     -->
                     </div>
 
-                    <!-- Total Layers slider -->
                     <div class="form-group">
                         <label for="total_layers">Total Layers:</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="10" value="1" step="1" oninput="syncSlider('total_layers')">
-                            <input type="number" id="total_layers_input" min="1" max="10" value="1" oninput="syncInput('total_layers')">
+                            <!-- Slider -->
+                            <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="2" value="1" step="1" 
+                                   oninput="syncSliderWithInput('total_layers', 'total_layers_input')">
+                            <!-- Number Input -->
+                            <input type="number" id="total_layers_input" min="1" max="2" value="1" 
+                                   oninput="syncInputWithSlider('total_layers_input', 'total_layers')">
                         </div>
                     </div>
-
-                    <!-- Cost slider -->
+                    
                     <div class="form-group">
                         <label for="C_bar_init">Resource:</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
-                            <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                            <!-- Slider -->
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" 
+                                   oninput="syncSliderWithInput('C_bar_init', 'C_bar_init_input')">
+                            <!-- Number Input -->
+                            <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" 
+                                   oninput="syncInputWithSlider('C_bar_init_input', 'C_bar_init')">
                         </div>
                     </div>
 
@@ -152,5 +158,29 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Function to sync slider value with input
+        function syncSliderWithInput(sliderId, inputId) {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            input.value = slider.value;  // Update the input with the slider's value
+            updateSliderBackground(slider);  // Optional: To add a color gradient to the slider background
+        }
+    
+        // Function to sync input value with slider
+        function syncInputWithSlider(inputId, sliderId) {
+            const input = document.getElementById(inputId);
+            const slider = document.getElementById(sliderId);
+            slider.value = input.value;  // Update the slider with the input's value
+            updateSliderBackground(slider);  // Optional: To add a color gradient to the slider background
+        }
+    
+        // Optional: Function to update slider background color
+        function updateSliderBackground(slider) {
+            const percentage = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+            slider.style.background = `linear-gradient(to right, #007bff ${percentage}%, #d3d3d3 ${percentage}%)`;
+        }
+    </script>
+    
 </body>
 </html>

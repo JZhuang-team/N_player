@@ -365,15 +365,15 @@
                 "type": "LineString"
             }
         }
-        
-        const metrics = {
-                    layers: 2,
-                    investment: [7.82, 2.18],
-                    risk: [5.475, 10.9375],
-                    vulnerability: [0.0438, 0.0875],
-                    consequence: [500, 500],
-                    threat: [0.5, 0.5]
-                };
+        //
+        //const metrics = {
+        //        layers: 'layer',
+        //        investment: 'investment',
+        //        risk: 'risk',
+        //        vulnerability: 'vulnerability',
+        //       consequence: 'consequence ',
+        //        threat: 'threat'
+        //    };
 
         map.on('load', function () {
             // Add the buildings' polygons to the map
@@ -591,5 +591,32 @@
         }
         });
     </script>
+    
+    <script>
+        // Initialize an empty metrics object
+        let metric= {};
+
+        // Fetch metrics data from the API endpoint
+        fetch('/api/metrics')
+            .then(response => response.json())
+            .then(data => {
+                // Populate the metrics object with the data from the API
+                metrics = {
+                    layers: data.layers,
+                    investment: data.investment,
+                    risk: data.risk,
+                    vulnerability: data.vulnerability,
+                    consequence: data.consequence,
+                    threat: data.threat
+                };
+
+                console.log(metric); // Log to verify data is correctly fetched and stored
+
+                // Now you can use the metrics data in your application
+                // For example, applyMetric(metrics) or any other function that uses metrics
+            })
+            .catch(error => console.error('Error fetching metrics:', error));
+    </script>
+
 </body>
 </html>

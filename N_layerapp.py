@@ -1,22 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response
 from scipy.optimize import minimize
-import matplotlib
-matplotlib.use('Agg')
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-import seaborn as sns
-import io
-import base64
 import logging
 import os
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
-
-
-
-
+metrics_data = {}
 # Initialization functions
 class instance_nLY:
     def __init__(self, s=[], beta=[], alpha=[], theta=[], gamma=[], cost=[], C_bar=[]):
@@ -27,6 +18,9 @@ class instance_nLY:
         self.gamma = gamma
         self.cost = cost
         self.C_bar = C_bar
+
+        # 添加计算 raw_risk 的属性
+        self.raw_risk = [_s * _beta * _alpha for _s, _beta, _alpha in zip(s, beta, alpha)]
 
     def print_values(self):
         print("s =", self.s)
@@ -51,40 +45,45 @@ def objective_prob(Y, _nLayers):
     global obj2
     f = [None] * _nLayers
     for i in range(len(f)):
-        f[i] = np.exp(-1 * sum([obj2.gamma[i-k] * obj2.theta[k] * Y[k] for k in range(i+1)]))#vul
-    raw_risk = [_s * _beta * _alpha for _s, _beta, _alpha in zip(obj2.s, obj2.beta, obj2.alpha)]#risk
+        f[i] = np.exp(-1 * sum([obj2.gamma[i - k] * obj2.theta[k] * Y[k] for k in range(i + 1)]))  # vulnerability
+    raw_risk = obj2.raw_risk  # 使用预先计算的 raw_risk
     return sum(a * b for a, b in zip(raw_risk, f))
-
-def objective_stra(Y, _nLayers):
-    global obj2
-    f = [None] * _nLayers
-    for i in range(len(f)):
-        f[i] = np.exp(-1 * sum([obj2.gamma[i-k] * obj2.theta[k] * Y[k] for k in range(i+1)]))#vul
-    raw_risk = [_s * _alpha for _s, _alpha in zip(obj2.s, obj2.alpha)]#risk
-    return max(a * b for a, b in zip(raw_risk, f))
 
 def constraint(Y, obj2):
     return obj2.C_bar - sum(a * b for a, b in zip(obj2.cost, Y))
 
-def get_numerical_sol(init_val, _model, _nLayers, obj2):
+def compute_f(Y, _nLayers):
+    global obj2
+    f = [None] * _nLayers
+    for i in range(len(f)):
+        f[i] = np.exp(-1 * sum([obj2.gamma[i - k] * obj2.theta[k] * Y[k] for k in range(i + 1)]))
+    return f
+
+def compute_raw_risk():
+    global obj2
+    return obj2.raw_risk
+
+def compute_risk_contributions(raw_risk, f_values):
+    # 计算每一层的风险贡献：raw_risk[i] * f[i]
+    risk_contributions = [round(a * b, 4) for a, b in zip(raw_risk, f_values)]
+    total_risk = round(sum(risk_contributions), 4)
+    return risk_contributions, total_risk
+
+def get_numerical_sol(init_val, _nLayers, obj2):
     Y0 = init_val
     b = (0.0, None)
     bnds = (b,) * _nLayers
     con1 = {'type': 'eq', 'fun': lambda Y: constraint(Y, obj2)}
     cons = ([con1])
-    if _model == 'prob':
-        solution = minimize(lambda Y: objective_prob(Y, _nLayers), Y0, method='SLSQP', bounds=bnds, constraints=cons)
-        x = solution.x
-        x = [round(i, 4) for i in x]
-        obj_value = round(objective_prob(x, _nLayers), 4)
-    elif _model == 'stra':
-        solution = minimize(lambda Y: objective_stra(Y, _nLayers), Y0, method='SLSQP', bounds=bnds, constraints=cons)
-        x = solution.x
-        x = [round(i, 4) for i in x]
-        obj_value = round(objective_stra(x, _nLayers), 4)
-    else:
-        print("Something is wrong here......(get_numerical_sol)")
-    return flatten_list([obj_value, x])
+    solution = minimize(lambda Y: objective_prob(Y, _nLayers), Y0, method='SLSQP', bounds=bnds, constraints=cons)
+    x = solution.x
+    x = [round(i, 2) for i in x]
+    f_values = compute_f(x, _nLayers)  # 计算 f[i] 值
+    f_values = [round(f, 4) for f in f_values]  # 对 f[i] 进行四舍五入，方便显示
+    raw_risk = compute_raw_risk()  # 计算 raw_risk
+    risk_contributions, total_risk = compute_risk_contributions(raw_risk, f_values)
+    obj_value = total_risk  # objective value 就是 total_risk
+    return flatten_list([obj_value, x]), f_values, risk_contributions, total_risk
 
 def addRow(df, ls):
     numEl = len(ls)
@@ -92,13 +91,14 @@ def addRow(df, ls):
     df = pd.concat([df, newRow], ignore_index=True)
     return df
 
-def get_full_sol(_nLayers, whichmodel, obj2, vars_col):
+def get_full_sol(_nLayers, obj2, vars_col):
     intial_sol = [3] * _nLayers
-    solutions = get_numerical_sol(intial_sol, whichmodel, _nLayers, obj2)
+    solutions, f_values, risk_contributions, total_risk = get_numerical_sol(intial_sol, _nLayers, obj2)
     required_length = len(vars_col)
     while len(solutions) < required_length:
         solutions.append(0)
-    return solutions[:required_length]
+    solutions = solutions[:required_length]
+    return solutions, f_values, risk_contributions, total_risk
 
 def initialization(_nLayers, C_bar_init):
     gam = 0.5
@@ -111,20 +111,11 @@ def initialization(_nLayers, C_bar_init):
     obj_base = instance_nLY(s=s_init, alpha=alpha_init, beta=beta_init, theta=theta_init, cost=cost_init, gamma=gamma_init, C_bar=C_bar_init)
     return obj_base
 
-def generate_plot(whichmodel, solution_df, total_layers, obj2):
-    img = io.BytesIO()
-    plt.savefig(img, format='png', bbox_inches='tight')
-    img.seek(0)
-    plot_url = base64.b64encode(img.getvalue()).decode('utf8')
-    plt.close()
-    return plot_url
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global obj2
+    global obj2, metrics_data
 
     if request.method == 'POST':
-        model_type = request.form.get('model_type')
         total_layers = int(request.form.get('total_layers'))
         C_bar_init = float(request.form.get('C_bar_init'))
 
@@ -132,96 +123,66 @@ def index():
         app.logger.info(f"C_bar_init: {C_bar_init}")
 
         vars_col = ['obj_value'] + ['y' + str(i+1) for i in range(total_layers)]
-        model_set = ['prob', 'stra']
-        prob_solutions = None
-        stra_solutions = None
 
-        labels = ['Layer ' + str(i+1) for i in range(total_layers)]
-        plot_urls = {}
+        solution_df = pd.DataFrame(columns=vars_col)
 
-        # Select the appropriate image based on total_layers
         layer_image = None
         if total_layers in [1, 2, 3, 4]:
             layer_image = f"layer{total_layers}.png"
 
-        for m in range(len(model_set)):
-            whichmodel = model_set[m]
-            solution_df = pd.DataFrame(columns=vars_col)
+        final_solutions = None
+        final_f_values = None
+        final_risk_contributions = None
+        total_risk = None
 
-            for i in range(total_layers):
-                _nLayers = i + 1
-                obj_base = initialization(_nLayers, C_bar_init)
-                obj2 = copy.deepcopy(obj_base)
-                solutions = get_full_sol(_nLayers, whichmodel, obj2, vars_col)
-                solution_df = addRow(solution_df, solutions)
-            
-            solution_df["Layers"] = [i for i in range(1, total_layers+1)] 
+        for i in range(total_layers):
+            _nLayers = i + 1
+            obj_base = initialization(_nLayers, C_bar_init)
+            obj2 = copy.deepcopy(obj_base)
+            solutions, f_values, risk_contributions, total_risk = get_full_sol(_nLayers, obj2, vars_col)
+            solution_df = addRow(solution_df, solutions)
+            if i == total_layers - 1:
+                final_solutions = solutions
+                final_f_values = f_values
+                final_risk_contributions = risk_contributions
 
-            if whichmodel == 'prob':
-                prob_solutions = solutions
-            elif whichmodel == 'stra':
-                stra_solutions = solutions
-            else:
-                print("Something is wrong.")
+        solution_df["Layers"] = [i for i in range(1, total_layers+1)] 
 
-            finaldata = pd.DataFrame()
-            for i in range(0, total_layers):
-                new_name = 'invest' + str(i+1)
-                old_name = 'y' + str(i+1)
-                finaldata[new_name] = obj2.cost[i] * solution_df[old_name]
-
-            data_perc = 100 * finaldata[finaldata.columns.values.tolist()].divide(finaldata[finaldata.columns.values.tolist()].sum(axis=1), axis=0)
-            data_perc["Layers"] = [i for i in range(1, total_layers+1)]
-
-            for i in range(1, total_layers + 1):
-                col = 'invest' + str(i)
-                data_perc[col] = pd.to_numeric(data_perc[col], errors='coerce')
-
-            plt.stackplot(data_perc['Layers'],
-                          [data_perc['invest' + str(i+1)] for i in range(total_layers)],
-                          labels=labels,
-                          colors=sns.color_palette(("Greys"), total_layers),
-                          alpha=1, edgecolor='grey')
-
-            plt.margins(x=0)
-            plt.margins(y=0)
-            plt.rcParams['font.size'] = 15
-            if whichmodel == 'prob':
-                plt.ylabel("Budget allocation (%)", fontsize=18)
-                plt.xlabel("Number of layers for LRA-PR Model", fontsize=18)
-            if whichmodel == 'stra':
-                plt.xlabel("Number of layers for LRA-SR Model", fontsize=18)
-
-            plt.legend(fontsize=14, markerscale=2, loc='center left', bbox_to_anchor=(1.2, 0.5), fancybox=True, shadow=True, ncol=1)
-
-            plot_urls[whichmodel] = generate_plot(whichmodel, solution_df, total_layers, obj2)
-
-        if model_type == 'prob':
-            display_solutions = prob_solutions
-            display_model = 'prob'
-        else:
-            display_solutions = stra_solutions
-            display_model = 'stra'
-
+        # 提取最终的投资方案
+        investments = [final_solutions[i+1] for i in range(total_layers)]  # final_solutions[0] 是 obj_value
+        print(total_layers,investments,final_risk_contributions,final_f_values,obj2.s,obj2.beta)
+        # Store the calculated data in the global `metrics_data` dictionary
+        metrics_data = {
+            "layers": total_layers,
+            "investment": investments,
+            "risk": final_risk_contributions,
+            "vulnerability": final_f_values,
+            "consequence": obj2.s,
+            "threat": obj2.beta
+        }
         return render_template(
-            'results_template.html',
-            model_type=model_type,
-            plot_url=plot_urls[display_model],
+            'result_29oct.html',
             total_layers=total_layers,
             C_bar_init=C_bar_init,
-            model=display_model,
-            solutions=display_solutions,#invest
-            consequence=obj2.s,#conseques
-            threat=obj2.beta,#threat
-            alpha=str(obj2.alpha),
-            theta=str(obj2.theta),
-            gamma=str(obj2.gamma),
-            cost=str(obj2.cost),
-            C_bar=str(obj2.C_bar),
-            layer_image=layer_image,  vulnerability="0.56"
-            )  # New parameter for layer-specific image
+            solutions=investments,#investiment
+            objective_value=total_risk,  
+            vulnerability=final_f_values,  # vulnerability
+            risk=final_risk_contributions,  # risk
+            consequence=obj2.s, #consequence
+            threat=obj2.beta, #threat
+            alpha=obj2.alpha,
+            theta=obj2.theta,
+            gamma=obj2.gamma,
+            cost=obj2.cost,
+            C_bar=obj2.C_bar,
+            layer_image=layer_image,
+            )
 
-    return render_template('form_template.html')
+    return render_template('home.html')
+@app.route('/api/metrics')
+def get_metrics():
+    
+    return jsonify(metrics_data)
 
 @app.route('/about')
 def about():
@@ -235,9 +196,5 @@ def contact():
 def results():
     return index()
 
-
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-#if __name__ == "__main__":
-#    app.run(debug=True, port=5000)
