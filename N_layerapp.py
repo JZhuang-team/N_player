@@ -161,7 +161,7 @@ def index():
             "threat": obj2.beta
         }
         return render_template(
-            'result_29oct.html',
+            'index.html',
             total_layers=total_layers,
             C_bar_init=C_bar_init,
             solutions=investments,#investiment
