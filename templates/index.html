@@ -131,7 +131,7 @@
                 </div>
 
                 <!-- Model selection form -->
-                <form action="/results" method="post">
+                <form action="result.html" method="post">
                     <!-- Model Type selection -->
                     <div class="form-group">
                         <label>Model Type:</label>
@@ -199,6 +199,7 @@
             center: [-78.786058, 43.001150], // Starting position [lng, lat]
             zoom: 15 // Starting zoom level
         });
+        // Synchronize slider and input box for Total Layers
         function syncSlider(id) {
             const slider = document.getElementById(id);
             const input = document.getElementById(id + '_input');
@@ -387,9 +388,9 @@
                 'source': 'buildings',
                 'layout': {},
                 'paint': {
-                    'line-color': '#FF0000', // Red color for the building outline
+                    'line-color': '#0000FF', // Red color for the building outline
                     'line-opacity': 1,
-                    'line-width': 5
+                    'line-width': 9
                 }
             });
 
@@ -416,7 +417,7 @@
                 'paint': {
                     'line-color': '#0000FF', // Blue color for the road
                     'line-opacity': 1,
-                    'line-width': 5
+                    'line-width': 9
                 }
             });
 
@@ -431,7 +432,7 @@
                         <b>No of Layers: </b>${metrics.layers}</br>
                         <b>Vulnerability: </b>${metrics.vulnerability}</br>
                         <b>Investment: </b>${metrics.investment}</br>
-                        <b>Raw Risk: </b>${metrics.risk}</br>
+                        <b>Raw Risk: </b>${metrics.risk[0]}</br>
                         <b>Consequence: </b>${metrics.consequence}</br>
                         <b>Threat: </b>${metrics.threat}
                     `)
@@ -441,17 +442,18 @@
             // Click event for the blue line (road)
             map.on('click', 'road-layer', function (e) {
                 const roadName = e.features[0].properties.title;
+                print(metrics)
 
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(`
                         <h5>${roadName}</h5>
                         <b>No of Layers: </b>${metrics.layers}</br>
-                        <b>Vulnerability: </b>${metrics.vulnerability}</br>
-                        <b>Investment: </b>${metrics.investment}</br>
-                        <b>Raw Risk: </b>${metrics.risk[0]}</br>
-                        <b>Consequence: </b>${metrics.consequence}</br>
-                        <b>Threat: </b>${metrics.threat}
+                        <b>Vulnerability: </b>${metrics.vulnerability[1]}</br>
+                        <b>Investment: </b>${metrics.investment[1]}</br>
+                        <b>Raw Risk: </b>${metrics.risk[1]}</br>
+                        <b>Consequence: </b>${metrics.consequence[1]}</br>
+                        <b>Threat: </b>${metrics.threat[1]}
                     `)
                     .addTo(map);
             });
@@ -474,124 +476,166 @@
         function applyMetric(metric) {
             const light_color = '#18A5D3';
             const dark_color = '#000080';
-            
-            if (metric == 'vulnerability') {
+
+            // Debugging output to check metric and layer0, layer1 values
+            console.log(`Applying metric: ${metric}`);
+
+            if (metric === 'consequence') {
                 const [layer0, layer1] = metrics.vulnerability;
+                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
-                if (layer0 > layer1){
+                if (layer0 > layer1) {
                     map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 5);
-                    map.setPaintProperty('road-layer', 'line-color', light_color);  
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-                else if (layer0 < layer1){
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 5);
-                }
-                else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-            }
-            if (metric == 'consequence') {
-                const [layer0, layer1] = metrics.consequence;
-                
-                if (layer0 < layer1){
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);  
-                    map.setPaintProperty('road-layer', 'line-width', 5);
-                }
-                else if (layer0 > layer1){
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 5);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
+
                     map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-                else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-            }
-            if (metric == 'threat') {
-                const [layer0, layer1] = metrics.threat;
-
-                if (layer0 < layer1){
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                } else if (layer0 < layer1) {
                     map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);  
-                    map.setPaintProperty('road-layer', 'line-width', 5);
-                }
-                else if (layer0 > layer1){
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 5);
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-                else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
                     map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
+                } else {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
                 }
             }
-            if (metric == 'risk') {
-                const [layer0, layer1] = metrics.risk;
+            elif (metric === 'vulnerability') {
+                const [layer0, layer1] = metrics.vulnerability;
+                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
-                if (layer0 < layer1){
+                if (layer0 > layer1) {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', light_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                } else if (layer0 < layer1) {
                     map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);  
-                    map.setPaintProperty('road-layer', 'line-width', 5);
-                }
-                else if (layer0 > layer1){
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 5);
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-                else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
                     map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
+                } else {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
                 }
             }
-            if (metric == 'investment') {
-                const [layer0, layer1] = metrics.investment;
+            elif (metric === 'threat') {
+                const [layer0, layer1] = metrics.vulnerability;
+                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
-                if (layer0 < layer1){
+                if (layer0 > layer1) {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', light_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                } else if (layer0 < layer1) {
                     map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);  
-                    map.setPaintProperty('road-layer', 'line-width', 5);
-                }
-                else if (layer0 > layer1){
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 5);
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-                else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 3);
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 3);
-                }
-            }
-            else {
-                console.log("Other metrics not handled yet");
-            }
-        }
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
 
-    </script>
-    <script>
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
+                } else {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                }
+            }
+            elif (metric === 'risk') {
+                const [layer0, layer1] = metrics.vulnerability;
+                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
+
+                if (layer0 > layer1) {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', light_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                } else if (layer0 < layer1) {
+                    map.setPaintProperty('building-layer', 'line-color', light_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
+                } else {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                }
+            }
+            elif (metric === 'investment') {
+                const [layer0, layer1] = metrics.vulnerability;
+                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
+
+                if (layer0 > layer1) {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', light_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                } else if (layer0 < layer1) {
+                    map.setPaintProperty('building-layer', 'line-color', light_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
+                } else {
+                    map.setPaintProperty('building-layer', 'line-color', dark_color);
+                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
+
+                    map.setPaintProperty('road-layer', 'line-color', dark_color);
+                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
+                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
+                }
+            }
+
+    // Repeat similar adjustments for other metrics (consequence, threat, risk, investment)
+}
+
+
+
         // Initialize an empty metrics object
         let metric= {};
 
@@ -615,6 +659,21 @@
                 // For example, applyMetric(metrics) or any other function that uses metrics
             })
             .catch(error => console.error('Error fetching metrics:', error));
+
+
+             // listeners for the buttons
+            document.querySelector(".top-right-buttons").addEventListener("click", function(event) {
+                if (event.target.tagName === 'BUTTON') {
+                    const metric = event.target.innerText.toLowerCase();
+
+                    // Redirect to a relative path for "mainpage"
+                    if (metric === 'mainpage') {
+                        window.location.href = 'index.html'; // Relative path to your HTML file
+                    } else {
+                        applyMetric(metric);
+                    }
+                }
+            });
     </script>
 </body>
 </html>
