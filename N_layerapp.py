@@ -181,7 +181,6 @@ def index():
     return render_template('home.html')
 @app.route('/api/metrics')
 def get_metrics():
-    
     return jsonify(metrics_data)
 
 @app.route('/about')

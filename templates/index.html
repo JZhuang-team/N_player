@@ -191,13 +191,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20ybWJqZnlzMGtobTJrcHc3b2Rid3VmdiJ9.9xXysCma-jzUl_MvQh16Xw'
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'
         
         const map = new mapboxgl.Map({
-            container: 'map', // Container ID
-            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', // Your custom style
-            center: [-78.786058, 43.001150], // Starting position [lng, lat]
-            zoom: 15 // Starting zoom level
+            container: 'map', 
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', 
+            center: [-78.786058, 43.001150], 
+            zoom: 15
         });
         // Synchronize slider and input box for Total Layers
         function syncSlider(id) {
@@ -510,7 +510,7 @@
                     map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
                 }
             }
-            elif (metric === 'vulnerability') {
+            else if (metric === 'vulnerability') {
                 const [layer0, layer1] = metrics.vulnerability;
                 console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
@@ -540,7 +540,7 @@
                     map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
                 }
             }
-            elif (metric === 'threat') {
+            else if (metric === 'threat') {
                 const [layer0, layer1] = metrics.vulnerability;
                 console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
@@ -570,7 +570,7 @@
                     map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
                 }
             }
-            elif (metric === 'risk') {
+            else if (metric === 'risk') {
                 const [layer0, layer1] = metrics.vulnerability;
                 console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
@@ -600,7 +600,7 @@
                     map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
                 }
             }
-            elif (metric === 'investment') {
+            else if (metric === 'investment') {
                 const [layer0, layer1] = metrics.vulnerability;
                 console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
 
