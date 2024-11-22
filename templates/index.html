@@ -442,7 +442,6 @@
             // Click event for the blue line (road)
             map.on('click', 'road-layer', function (e) {
                 const roadName = e.features[0].properties.title;
-                print(metrics)
 
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
