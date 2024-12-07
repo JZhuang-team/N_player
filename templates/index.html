@@ -430,11 +430,11 @@
                     .setHTML(`
                         <h5>${buildingName}</h5>
                         <b>No of Layers: </b>${metrics.layers}</br>
-                        <b>Vulnerability: </b>${metrics.vulnerability}</br>
-                        <b>Investment: </b>${metrics.investment}</br>
+                        <b>Vulnerability: </b>${metrics.vulnerability[0]}</br>
+                        <b>Investment: </b>${metrics.investment[0]}</br>
                         <b>Raw Risk: </b>${metrics.risk[0]}</br>
-                        <b>Consequence: </b>${metrics.consequence}</br>
-                        <b>Threat: </b>${metrics.threat}
+                        <b>Consequence: </b>${metrics.consequence[0]}</br>
+                        <b>Threat: </b>${metrics.threat[0]}
                     `)
                     .addTo(map);
             });
