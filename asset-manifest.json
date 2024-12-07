@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/dorjeela/static/css/main.f855e6bc.css",
+    "main.js": "/dorjeela/static/js/main.0cd407ec.js",
+    "index.html": "/dorjeela/index.html",
+    "main.f855e6bc.css.map": "/dorjeela/static/css/main.f855e6bc.css.map",
+    "main.0cd407ec.js.map": "/dorjeela/static/js/main.0cd407ec.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.0cd407ec.js"
+  ]
+}
