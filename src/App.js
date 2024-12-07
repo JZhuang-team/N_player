@@ -1,12 +1,19 @@
-
-import './App.css';
+import React from 'react';
+import Map from './components/Map';
+import Sidebar from './components/Sidebar';
 
 function App() {
+  const handleSidebarUpdate = (data) => {
+    console.log(data); // Process sidebar updates here
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        test
-      </header>
+    <div className="flex h-screen w-screen">
+
+      {/* Map */}
+      <div className="flex-1">
+        <Map />
+      </div>
     </div>
   );
 }
