@@ -1,0 +1,15 @@
+# React-related dependencies
+react==18.2.0 
+react-dom==18.2.0
+react-scripts==5.0.1
+
+# Styling and UI dependencies
+tailwindcss==3.3.2
+postcss==8.4.21
+autoprefixer==10.4.13
+
+# Mapbox dependencies
+mapbox-gl==2.14.1
+
+# Backend interaction
+axios==1.2.0 
