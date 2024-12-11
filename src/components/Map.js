@@ -8,10 +8,11 @@ function Map() {
   const mapRef = useRef();
   const mapContainerRef = useRef();
   const [modelType, setModelType] = useState('prob');
-  const [totalLayers, setTotalLayers] = useState(1);
+  const [totalLayers, setTotalLayers] = useState(1); // Default to 1 layer
   const [resource, setResource] = useState(0);
   const [layersVisible, setLayersVisible] = useState(false); // Manage layer visibility
   const [sidebarData, setSidebarData] = useState(null); // Data for the right sidebar
+  const [backendData, setBackendData] = useState(null); // Data from the backend
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20ybWJqZnlzMGtobTJrcHc3b2Rid3VmdiJ9.9xXysCma-jzUl_MvQh16Xw';
@@ -41,15 +42,6 @@ function Map() {
               'line-width': 9,
             },
           });
-
-          map.addLayer({
-            id: 'building-layer2',
-            type: 'fill',
-            source: 'buildings',
-            paint: {
-              'fill-opacity': 0,
-            },
-          });
         }
 
         // Add roads source and layers
@@ -72,18 +64,36 @@ function Map() {
         }
 
         // Add click events for buildings and roads
-        map.on('click', 'building-layer', (e) => {
-          setSidebarData({
-            title: 'Building Protection',
-            description: 'This is the protection status of the building.',
-          });
+        map.on('click', 'building-layer', () => {
+          if (backendData) {
+            setSidebarData({
+              title: 'Building Data',
+              description: `
+                No of Layers: ${totalLayers}<br />
+                Vulnerability: ${backendData.vulnerability[0]}<br />
+                Investment: ${backendData.solutions[0]}<br />
+                Raw Risk: ${backendData.risk[0]}<br />
+                Consequence: ${backendData.consequence[0]}<br />
+                Threat: ${backendData.threat[0]}
+              `,
+            });
+          }
         });
 
-        map.on('click', 'road-layer', (e) => {
-          setSidebarData({
-            title: 'Road Protection',
-            description: 'This is the protection status of the road.',
-          });
+        map.on('click', 'road-layer', () => {
+          if (backendData) {
+            setSidebarData({
+              title: 'Road Data',
+              description: `
+                No of Layers: ${totalLayers}<br />
+                Vulnerability: ${backendData.vulnerability[1]}<br />
+                Investment: ${backendData.solutions[1]}<br />
+                Raw Risk: ${backendData.risk[1]}<br />
+                Consequence: ${backendData.consequence[1]}<br />
+                Threat: ${backendData.threat[1]}
+              `,
+            });
+          }
         });
 
         // Change the cursor to pointer when over a layer
@@ -109,16 +119,46 @@ function Map() {
     return () => {
       map.remove();
     };
-  }, [layersVisible]);
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setLayersVisible(true); // Show layers when the button is pressed
-    console.log({ modelType, totalLayers, resource });
-  };
+  }, [layersVisible, backendData]);
 
   const syncSlider = (setter, value) => {
-    setter(value);
+    setter(Number(value)); // Update the state with the parsed numeric value
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLayersVisible(true);
+
+    const formData = {
+      total_layers: totalLayers,
+      resource: resource,
+      model_type: modelType,
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response from Flask:', data);
+      setBackendData(data); // Store backend data in state
+      setSidebarData({
+        title: 'Results',
+        description: `
+          Objective Value: ${data.objective_value}<br />
+          Investments: ${data.solutions.join(', ')}
+        `,
+      });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
   };
 
   return (
@@ -156,7 +196,7 @@ function Map() {
                 id="total_layers"
                 name="total_layers"
                 min="1"
-                max="10"
+                max="2" // Max value updated to 2
                 step="1"
                 value={totalLayers}
                 onChange={(e) => syncSlider(setTotalLayers, e.target.value)}
@@ -166,7 +206,7 @@ function Map() {
                 type="number"
                 id="total_layers_input"
                 min="1"
-                max="10"
+                max="2" // Max value updated to 2
                 value={totalLayers}
                 onChange={(e) => syncSlider(setTotalLayers, e.target.value)}
                 className="w-16 border border-gray-300 rounded px-2 py-1"
@@ -214,13 +254,16 @@ function Map() {
         </form>
       </div>
 
-      {/* Right Sidebar */}
       {sidebarData && (
-        <div className="absolute top-0 right-5 mt-5 mb-5 bg-white p-6 rounded-lg shadow-lg w-96 h-auto z-10 overflow-auto">
-          <h2 className="text-lg font-semibold mb-4">{sidebarData.title}</h2>
-          <p>{sidebarData.description}</p>
+        <div
+            className="absolute top-0 right-5 mt-5 mb-5 bg-white p-6 rounded-lg shadow-lg w-96 h-[calc(100%-2rem)] z-10 overflow-auto"
+            style={{ width: '24rem', height: 'calc(100% - 2rem)' }} // Match dimensions to the left sidebar
+        >
+            <h2 className="text-lg font-semibold mb-4">{sidebarData.title}</h2>
+            <p dangerouslySetInnerHTML={{ __html: sidebarData.description }} />
         </div>
-      )}
+        )}
+
     </>
   );
 }
