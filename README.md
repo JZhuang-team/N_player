@@ -55,21 +55,3 @@ c. Start the React Development Server
 Start the React app:
 npm start
 This will open the app in your default browser at http://localhost:3000.
-
----
-
-Project Structure
-
-your-repo-name/
-├── frontend/               # React frontend code
-│   ├── public/
-│   ├── src/
-│   │   ├── components/     # React components (e.g., Map.js)
-│   │   ├── App.js          # Main React app
-│   └── package.json        # Node.js dependencies
-├── backend/                # Flask backend code
-│   ├── app.py              # Main Flask application
-│   ├── templates/          # HTML templates (if any)
-│   ├── static/             # Static files
-│   └── requirements.txt    # Python dependencies
-└── README.md               # Project documentation
