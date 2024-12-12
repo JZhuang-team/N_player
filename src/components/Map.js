@@ -108,6 +108,13 @@ function Map() {
   
     // Add heatmap toggling logic
     const toggleHeatmapLayer = (id, sourceId, data, isVisible, paintConfig) => {
+      const map = mapRef.current;
+    
+      if (!map || !map.isStyleLoaded()) {
+        console.warn('Map style is not loaded yet. Skipping heatmap toggle.');
+        return;
+      }
+    
       if (isVisible) {
         if (!map.getSource(sourceId)) {
           map.addSource(sourceId, {
@@ -128,6 +135,7 @@ function Map() {
         if (map.getSource(sourceId)) map.removeSource(sourceId);
       }
     };
+    
   
     toggleHeatmapLayer(
       'heatmap-buildings-layer',
