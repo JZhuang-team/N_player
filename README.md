@@ -26,13 +26,13 @@ git clone https://github.com/JZhuang-team/N_player.git
 2. Backend Setup (Flask)
 
 a. Create a Virtual Environment
-python3 -m venv venv
+**python3 -m venv venv**
 
 b. Activate the Virtual Environment
 - On Mac/Linux:
-  source venv/bin/activate
+**  source venv/bin/activate**
 - On Windows:
-  venv\Scripts\activate
+**  venv\Scripts\activate**
 
 c. Install Dependencies
 Install the Python dependencies listed in requirements.txt:
