@@ -151,6 +151,30 @@
                             <input type="number" id="C_bar_init_input" min="0" max="500" value={{C_bar_init}} step="5" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
+                    <!-- Attack Type Selection -->
+                    <div class="form-group">
+                        <label>Attack Types:</label>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="attackType1" name="attack_type[]" value="Type1">
+                            <label class="custom-control-label" for="attackType1">Shooting</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="attackType2" name="attack_type[]" value="Type2">
+                            <label class="custom-control-label" for="attackType2">Kidnappig</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="attackType3" name="attack_type[]" value="Type3">
+                            <label class="custom-control-label" for="attackType3">Arson and Explosive threat</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="attackType1" name="attack_type[]" value="Type1">
+                            <label class="custom-control-label" for="attackType1">Sexual Assault</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="attackType2" name="attack_type[]" value="Type2">
+                            <label class="custom-control-label" for="attackType2">Vehicular Assault</label>
+                        </div>
+                    </div>
 
                     <!-- Submit button -->
                     <button type="submit" class="btn btn-primary">Update</button>
