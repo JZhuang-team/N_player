@@ -102,6 +102,30 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+        /* Right Sidebar styles */
+        .right-sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            width: 150px;
+            z-index: 1000; /* High z-index to ensure visibility above the map */
+        }
+
+        .right-sidebar button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+
+
     </style>
 </head>
 <body>
@@ -183,13 +207,22 @@
                 </form>
             </div>
 
-        
 
 
         </div>
         
         <!-- Map Area -->
-        <div id="map" class="map-canvas">   
+        <div id="map" class="map-canvas"> 
+            
+        <!-- Right Sidebar for buttons -->
+        <div class="right-sidebar">
+            <button onclick="toggleLayer('consequence')">Consequence</button>
+            <button onclick="toggleLayer('vulnerability')">Vulnerability</button>
+            <button onclick="toggleLayer('threat')">Threat</button>
+            <button onclick="toggleLayer('risk')">Risk</button>
+            <button onclick="toggleLayer('exposure')">Exposure</button>
+        </div>
+
     </div>
 
     <!-- JavaScript for Bootstrap -->
@@ -216,6 +249,16 @@
             const slider = document.getElementById(id);
             slider.value = input.value;
         }
+
+        function toggleLayer(layerName) {
+    var visibility = map.getLayoutProperty(layerName, 'visibility');
+    if (visibility === 'visible') {
+        map.setLayoutProperty(layerName, 'visibility', 'none');
+    } else {
+        map.setLayoutProperty(layerName, 'visibility', 'visible');
+    }
+}
+
     </script>
 </body>
 </html>

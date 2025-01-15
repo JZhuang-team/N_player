@@ -102,6 +102,29 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+        /* Right Sidebar styles */
+.right-sidebar {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    width: 150px;
+    z-index: 1000; /* High z-index to ensure visibility above the map */
+}
+
+.right-sidebar button {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+
     </style>
 </head>
 <body>
@@ -186,6 +209,15 @@
             <!-- Placeholder for actual map content -->
             <div id="map" class="map-canvas"></div>
         </div>
+        <div class="right-sidebar">
+            <button onclick="fetchData('consequence')">Consequence</button>
+            <button onclick="fetchData('vulnerability')">Vulnerability</button>
+            <button onclick="fetchData('threat')">Threat</button>
+            <button onclick="fetchData('risk')">Risk</button>
+            <button onclick="fetchData('investment')">Investment</button>
+            <div id="dataDisplay"></div>
+        </div>
+        
     </div>
 
     <!-- JavaScript for Bootstrap -->
@@ -431,12 +463,11 @@
                     .setLngLat(e.lngLat)
                     .setHTML(`
                         <h5>${buildingName}</h5>
-                        <b>No of Layers: </b>${metrics.layers}</br>
-                        <b>Vulnerability: </b>${metrics.vulnerability}</br>
-                        <b>Investment: </b>${metrics.investment}</br>
+                        <b>Vulnerability: </b>${metrics.vulnerability[0]}</br>
+                        <b>Investment: </b>${metrics.investment[0]}</br>
                         <b>Raw Risk: </b>${metrics.risk[0]}</br>
-                        <b>Consequence: </b>${metrics.consequence}</br>
-                        <b>Threat: </b>${metrics.threat}
+                        <b>Consequence: </b>${metrics.consequence[0]}</br>
+                        <b>Threat: </b>${metrics.threat[0]}
                     `)
                     .addTo(map);
             });
@@ -449,7 +480,6 @@
                     .setLngLat(e.lngLat)
                     .setHTML(`
                         <h5>${roadName}</h5>
-                        <b>No of Layers: </b>${metrics.layers}</br>
                         <b>Vulnerability: </b>${metrics.vulnerability[1]}</br>
                         <b>Investment: </b>${metrics.investment[1]}</br>
                         <b>Raw Risk: </b>${metrics.risk[1]}</br>
@@ -675,6 +705,34 @@
                     }
                 }
             });
+
+            function fetchData(dataType) {
+    fetch('/api/metrics')
+        .then(response => response.json())
+        .then(data => {
+            let displayText = '';
+            switch (dataType) {
+                case 'consequence':
+                    displayText = 'Consequence: ' + data.consequence.join(', ');
+                    break;
+                case 'vulnerability':
+                    displayText = 'Vulnerability: ' + data.vulnerability.join(', ');
+                    break;
+                case 'threat':
+                    displayText = 'Threat: ' + data.threat.join(', ');
+                    break;
+                case 'risk':
+                    displayText = 'Risk: ' + data.risk.join(', ');
+                    break;
+                case 'investment':
+                    displayText = 'Investment Levels: ' + data.investment.join(', '); // Assuming investment related to investment
+                    break;
+            }
+            document.getElementById('dataDisplay').innerHTML = displayText;
+        })
+        .catch(error => console.error('Error fetching data:', error));
+}
+
     </script>
 </body>
 </html>
