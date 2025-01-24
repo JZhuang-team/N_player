@@ -233,6 +233,37 @@
             center: [-78.786058, 43.001150], 
             zoom: 15
         });
+
+        map.on('load', function () {
+    fetch('/api/metrics')
+        .then(response => response.json())
+        .then(data => {
+            const investments = data.investment; // Assuming this is an array of investment values
+            const maxInvestment = Math.max(...investments);
+            const minInvestment = Math.min(...investments);
+
+            // Invert the line width calculation so higher investments have thicker lines
+            const getLineWidth = investment => {
+                const ratio = (investment - minInvestment) / (maxInvestment - minInvestment);
+                return 30 - (ratio * 10); // Inverts the scale: higher investment results in thicker line
+            };
+
+            // Ensure you are updating an existing layer
+            if (map.getLayer('building-layer')) {
+                investments.forEach((investment, index) => {
+                    // Ensure the layer name is correct
+                    map.setPaintProperty('building-layer', 'line-width', getLineWidth(investment));
+                });
+            } else {
+                console.log('Layer not found');
+            }
+        })
+        .catch(error => console.error('Error fetching investment data:', error));
+});
+
+
+
+
         // Synchronize slider and input box for Total Layers
         function syncSlider(id) {
             const slider = document.getElementById(id);
