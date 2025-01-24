@@ -227,42 +227,120 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'
         
-        const map = new mapboxgl.Map({
-            container: 'map', 
-            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', 
-            center: [-78.786058, 43.001150], 
-            zoom: 17.5
-        });
-
-        map.on('load', function () {
-    fetch('/api/metrics')
-        .then(response => response.json())
-        .then(data => {
-            const investments = data.investment; // Assuming this is an array of investment values
-            const maxInvestment = Math.max(...investments);
-            const minInvestment = Math.min(...investments);
-
-            // Invert the line width calculation so higher investments have thicker lines
-            const getLineWidth = investment => {
-                const ratio = (investment - minInvestment) / (maxInvestment - minInvestment);
-                return 30 - (ratio * 10); // Inverts the scale: higher investment results in thicker line
-            };
-
-            // Ensure you are updating an existing layer
-            if (map.getLayer('building-layer')) {
-                investments.forEach((investment, index) => {
-                    // Ensure the layer name is correct
-                    map.setPaintProperty('building-layer', 'line-width', getLineWidth(investment));
+        document.addEventListener('DOMContentLoaded', function() {
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
+                center: [-78.786058, 43.001150],
+                zoom: 17.5
+            });
+            map.on('load', function () {
+                // Define and add the buildings and roads geojson sources
+                map.addSource('buildings', {
+                    'type': 'geojson',
+                    'data': buildings
                 });
-            } else {
-                console.log('Layer not found');
-            }
-        })
-        .catch(error => console.error('Error fetching investment data:', error));
+                map.addSource('roads', {
+                    'type': 'geojson',
+                    'data': roads
+                });
+
+                // Define and add the building and road layers
+                map.addLayer({
+                    'id': 'building-layer',
+                    'type': 'line',
+                    'source': 'buildings',
+                    'paint': {
+                        'line-color': '#0000FF',
+                        'line-opacity': 1,
+                        'line-width': 9
+                    }
+                });
+                map.addLayer({
+                    'id': 'building-layer2',
+                    'type': 'fill',
+                    'source': 'buildings',
+                    'paint': {
+                        'fill-opacity': 0 // Invisible fill layer for the building
+                    }
+                });
+                map.addLayer({
+                    'id': 'road-layer',
+                    'type': 'line',
+                    'source': 'roads',
+                    'paint': {
+                        'line-color': '#0000FF',
+                        'line-opacity': 1,
+                        'line-width': 9
+                    }
+                });
+
+                // Function to update layer visibility based on the slider value
+                function updateLayerVisibility() {
+                    const layerSlider = document.getElementById('total_layers');
+                    const numberOfLayers = parseInt(layerSlider.value, 10);
+
+                    if (numberOfLayers === 1) {
+                        map.setLayoutProperty('building-layer', 'visibility', 'visible');
+                        map.setLayoutProperty('road-layer', 'visibility', 'none');
+                    } else if (numberOfLayers === 2) {
+                        map.setLayoutProperty('building-layer', 'visibility', 'visible');
+                        map.setLayoutProperty('road-layer', 'visibility', 'visible');
+                    }
+                }
+
+                // Set initial visibility based on the default slider value
+                updateLayerVisibility();
+
+                // Event listener for the slider to update visibility as it changes
+                document.getElementById('total_layers').addEventListener('input', updateLayerVisibility);
+
+                // Interaction event listeners for the building and road layers
+                map.on('click', 'building-layer', function (e) {
+                    const buildingName = e.features[0].properties.title;
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(`
+                            <h5>${buildingName}</h5>
+                            <b>Vulnerability: </b>${metrics.vulnerability[0]}</br>
+                            <b>Investment: </b>${metrics.investment[0]}</br>
+                            <b>Raw Risk: </b>${metrics.risk[0]}</br>
+                            <b>Consequence: </b>${metrics.consequence[0]}</br>
+                            <b>Threat: </b>${metrics.threat[0]}
+                        `)
+                        .addTo(map);
+                });
+
+                map.on('click', 'road-layer', function (e) {
+                    const roadName = e.features[0].properties.title;
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(`
+                            <h5>${roadName}</h5>
+                            <b>Vulnerability: </b>${metrics.vulnerability[1]}</br>
+                            <b>Investment: </b>${metrics.investment[1]}</br>
+                            <b>Raw Risk: </b>${metrics.risk[1]}</br>
+                            <b>Consequence: </b>${metrics.consequence[1]}</br>
+                            <b>Threat: </b>${metrics.threat[1]}
+                        `)
+                        .addTo(map);
+                });
+
+                // Cursor style change on hover
+                map.on('mouseenter', 'building-layer', function () {
+                    map.getCanvas().style.cursor = 'pointer';
+                });
+                map.on('mouseleave', 'building-layer', function () {
+                    map.getCanvas().style.cursor = '';
+                });
+                map.on('mouseenter', 'road-layer', function () {
+                    map.getCanvas().style.cursor = 'pointer';
+                });
+                map.on('mouseleave', 'road-layer', function () {
+                    map.getCanvas().style.cursor = '';
+                });
+            });
 });
-
-
-
 
         // Synchronize slider and input box for Total Layers
         function syncSlider(id) {
@@ -440,263 +518,6 @@
         //     threat: [0.5, 0.5]
         // };
 
-        map.on('load', function () {
-            // Add the buildings' polygons to the map
-            map.addSource('buildings', {
-                'type': 'geojson',
-                'data': buildings
-            });
-
-            map.addLayer({
-                'id': 'building-layer',
-                'type': 'line',
-                'source': 'buildings',
-                'layout': {},
-                'paint': {
-                    'line-color': '#0000FF', // Red color for the building outline
-                    'line-opacity': 1,
-                    'line-width': 9
-                }
-            });
-
-            map.addLayer({
-                'id': 'building-layer2',
-                'type': 'fill',
-                'source': 'buildings',
-                'layout': {},
-                'paint': {
-                    'fill-opacity': 0 // Invisible fill layer for the building
-                }
-            });
-
-            map.addSource('roads', {
-                'type': 'geojson',
-                'data': roads
-            });
-
-            map.addLayer({
-                'id': 'road-layer',
-                'type': 'line',
-                'source': 'roads',
-                'layout': {},
-                'paint': {
-                    'line-color': '#0000FF', // Blue color for the road
-                    'line-opacity': 1,
-                    'line-width': 9
-                }
-            });
-
-            // Click event for the red line (building outline)
-            map.on('click', 'building-layer', function (e) {
-                const buildingName = e.features[0].properties.title;
-
-                new mapboxgl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(`
-                        <h5>${buildingName}</h5>
-                        <b>Vulnerability: </b>${metrics.vulnerability[0]}</br>
-                        <b>Investment: </b>${metrics.investment[0]}</br>
-                        <b>Raw Risk: </b>${metrics.risk[0]}</br>
-                        <b>Consequence: </b>${metrics.consequence[0]}</br>
-                        <b>Threat: </b>${metrics.threat[0]}
-                    `)
-                    .addTo(map);
-            });
-
-            // Click event for the blue line (road)
-            map.on('click', 'road-layer', function (e) {
-                const roadName = e.features[0].properties.title;
-
-                new mapboxgl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(`
-                        <h5>${roadName}</h5>
-                        <b>Vulnerability: </b>${metrics.vulnerability[1]}</br>
-                        <b>Investment: </b>${metrics.investment[1]}</br>
-                        <b>Raw Risk: </b>${metrics.risk[1]}</br>
-                        <b>Consequence: </b>${metrics.consequence[1]}</br>
-                        <b>Threat: </b>${metrics.threat[1]}
-                    `)
-                    .addTo(map);
-            });
-
-            // Change the cursor to pointer when the mouse is over the red or blue lines
-            map.on('mouseenter', 'building-layer', function () {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'building-layer', function () {
-                map.getCanvas().style.cursor = '';
-            });
-            map.on('mouseenter', 'road-layer', function () {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-            map.on('mouseleave', 'road-layer', function () {
-                map.getCanvas().style.cursor = '';
-            });
-        });
-        // Function to apply metric styling
-        function applyMetric(metric) {
-            const light_color = '#18A5D3';
-            const dark_color = '#000080';
-
-            // Debugging output to check metric and layer0, layer1 values
-            console.log(`Applying metric: ${metric}`);
-
-            if (metric === 'consequence') {
-                const [layer0, layer1] = metrics.vulnerability;
-                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
-
-                if (layer0 > layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                } else if (layer0 < layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
-                } else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                }
-            }
-            else if (metric === 'vulnerability') {
-                const [layer0, layer1] = metrics.vulnerability;
-                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
-
-                if (layer0 > layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                } else if (layer0 < layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
-                } else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                }
-            }
-            else if (metric === 'threat') {
-                const [layer0, layer1] = metrics.vulnerability;
-                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
-
-                if (layer0 > layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                } else if (layer0 < layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
-                } else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                }
-            }
-            else if (metric === 'risk') {
-                const [layer0, layer1] = metrics.vulnerability;
-                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
-
-                if (layer0 > layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                } else if (layer0 < layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
-                } else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                }
-            }
-            else if (metric === 'investment') {
-                const [layer0, layer1] = metrics.vulnerability;
-                console.log(`Layer values for vulnerability: ${layer0}, ${layer1}`);
-
-                if (layer0 > layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 15); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', light_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                } else if (layer0 < layer1) {
-                    map.setPaintProperty('building-layer', 'line-color', light_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 15); // Set to desired width
-                } else {
-                    map.setPaintProperty('building-layer', 'line-color', dark_color);
-                    map.setPaintProperty('building-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('building-layer', 'line-width', 9); // Set to desired width
-
-                    map.setPaintProperty('road-layer', 'line-color', dark_color);
-                    map.setPaintProperty('road-layer', 'line-width', 1); // Temporarily set to 1 for debug
-                    map.setPaintProperty('road-layer', 'line-width', 9); // Set to desired width
-                }
-            }
-
-    // Repeat similar adjustments for other metrics (consequence, threat, risk, investment)
-}
-
-
 
         // Initialize an empty metrics object
         let metric= {};
@@ -738,31 +559,31 @@
             });
 
             function fetchData(dataType) {
-    fetch('/api/metrics')
-        .then(response => response.json())
-        .then(data => {
-            let displayText = '';
-            switch (dataType) {
-                case 'consequence':
-                    displayText = 'Consequence: ' + data.consequence.join(', ');
-                    break;
-                case 'vulnerability':
-                    displayText = 'Vulnerability: ' + data.vulnerability.join(', ');
-                    break;
-                case 'threat':
-                    displayText = 'Threat: ' + data.threat.join(', ');
-                    break;
-                case 'risk':
-                    displayText = 'Risk: ' + data.risk.join(', ');
-                    break;
-                case 'investment':
-                    displayText = 'Investment Levels: ' + data.investment.join(', '); // Assuming investment related to investment
-                    break;
+                fetch('/api/metrics')
+                    .then(response => response.json())
+                    .then(data => {
+                        let displayText = '';
+                        switch (dataType) {
+                            case 'consequence':
+                                displayText = 'Consequence: ' + data.consequence.join(', ');
+                                break;
+                            case 'vulnerability':
+                                displayText = 'Vulnerability: ' + data.vulnerability.join(', ');
+                                break;
+                            case 'threat':
+                                displayText = 'Threat: ' + data.threat.join(', ');
+                                break;
+                            case 'risk':
+                                displayText = 'Risk: ' + data.risk.join(', ');
+                                break;
+                            case 'investment':
+                                displayText = 'Investment Levels: ' + data.investment.join(', '); // Assuming investment related to investment
+                                break;
+                        }
+                        document.getElementById('dataDisplay').innerHTML = displayText;
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
             }
-            document.getElementById('dataDisplay').innerHTML = displayText;
-        })
-        .catch(error => console.error('Error fetching data:', error));
-}
 
     </script>
 </body>
