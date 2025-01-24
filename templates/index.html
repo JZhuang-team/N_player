@@ -295,6 +295,29 @@
                 // Event listener for the slider to update visibility as it changes
                 document.getElementById('total_layers').addEventListener('input', updateLayerVisibility);
 
+                fetch('/api/metrics')
+                    .then(response => response.json())
+                    .then(data => {
+                        const investments = data.investment; // Assuming this is an array of investment values
+                        const maxInvestment = Math.max(...investments);
+                        const minInvestment = Math.min(...investments);
+                        // Invert the line width calculation so higher investments have thicker lines
+                        const getLineWidth = investment => {
+                            const ratio = (investment - minInvestment) / (maxInvestment - minInvestment);
+                            return 30 - (ratio * 10); // Inverts the scale: higher investment results in thicker line
+                        };
+                        // Ensure you are updating an existing layer
+                        if (map.getLayer('building-layer')) {
+                            investments.forEach((investment, index) => {
+                                // Ensure the layer name is correct
+                                map.setPaintProperty('building-layer', 'line-width', getLineWidth(investment));
+                            });
+                        } else {
+                            console.log('Layer not found');
+                        }
+                    })
+                    .catch(error => console.error('Error fetching investment data:', error));
+
                 // Interaction event listeners for the building and road layers
                 map.on('click', 'building-layer', function (e) {
                     const buildingName = e.features[0].properties.title;
