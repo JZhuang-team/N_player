@@ -214,6 +214,8 @@
             <button onclick="fetchData('threat')">Threat</button>
             <button onclick="fetchData('risk')">Risk</button>
             <button onclick="fetchData('investment')">Investment</button>
+            <button onclick="switchView('streets-v11')">Streets View</button>
+            <button onclick="switchView('satellite-v9')">Satellite View</button>
             <div id="dataDisplay"></div>
         </div>
         
@@ -225,14 +227,15 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const map = new mapboxgl.Map({
+
+        const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
                 center: [-78.786058, 43.001150],
                 zoom: 17.5
             });
+        
+        document.addEventListener('DOMContentLoaded', function() {
             map.on('load', function () {
                 // Define and add the buildings and roads geojson sources
                 map.addSource('buildings', {
@@ -243,6 +246,8 @@
                     'type': 'geojson',
                     'data': roads
                 });
+
+                addMapLayersAndSources(); // Initial layer and source setup
 
                 // Define and add the building and road layers
                 map.addLayer({
@@ -606,6 +611,61 @@
                     })
                     .catch(error => console.error('Error fetching data:', error));
             }
+            
+            function addMapLayersAndSources() {
+                // Add sources
+                if (!map.getSource('buildings')) {
+                    map.addSource('buildings', {
+                        'type': 'geojson',
+                        'data': buildings // ensure your buildings data is correctly defined
+                    });
+                }
+
+                if (!map.getSource('roads')) {
+                    map.addSource('roads', {
+                        'type': 'geojson',
+                        'data': roads // ensure your roads data is correctly defined
+                    });
+                }
+
+                // Add layers
+                if (!map.getLayer('building-layer')) {
+                    map.addLayer({
+                        'id': 'building-layer',
+                        'type': 'line',
+                        'source': 'buildings',
+                        'layout': {},
+                        'paint': {
+                            'line-color': '#ff69b4',
+                            'line-width': 8
+                        }
+                    });
+                }
+
+                if (!map.getLayer('road-layer')) {
+                    map.addLayer({
+                        'id': 'road-layer',
+                        'type': 'line',
+                        'source': 'roads',
+                        'layout': {},
+                        'paint': {
+                            'line-color': '#00ff00',
+                            'line-width': 5
+                        }
+                    });
+                }
+            }
+
+            function switchView(styleId) {
+                var styleUrl = 'mapbox://styles/mapbox/' + styleId;
+                if (map) {
+                    map.setStyle(styleUrl);
+                    map.on('style.load', function() {
+                        addMapLayersAndSources(); // Re-add layers and sources
+                    });
+                }
+            }
+
 
     </script>
 </body>
