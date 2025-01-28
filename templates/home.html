@@ -124,6 +124,30 @@
             border-radius: 3px;
         }
 
+        /* New division for map view buttons */
+.map-view-buttons {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 175px;
+    z-index: 1000;
+    background: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.map-view-buttons button {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+        
+
 
     </style>
 </head>
@@ -211,17 +235,26 @@
         </div>
         
         <!-- Map Area -->
-        <div id="map" class="map-canvas"> 
+        <div class="map-area">
+            <!-- Placeholder for actual map content -->
+            <div id="map" class="map-canvas"></div>
+        </div>
             
         <!-- Right Sidebar for buttons -->
         <div class="right-sidebar">
+            <h6 style="text-align: center;"><b>Parameters</b></h6>
             <button onclick="toggleLayer('consequence')">Consequence</button>
             <button onclick="toggleLayer('vulnerability')">Vulnerability</button>
             <button onclick="toggleLayer('threat')">Threat</button>
             <button onclick="toggleLayer('risk')">Risk</button>
             <button onclick="toggleLayer('exposure')">Exposure</button>
+        </div>
+        <div class="map-view-buttons">
+            <h6 style="text-align: center;"><b>Change Map Style</b></h6>
             <button onclick="switchView('streets-v11')">Streets View</button>
-            <button onclick="switchView('satellite-v9')">Satellite View</button>
+            <button onclick="switchView('satellite-streets-v11')">Satellite View</button>
+            <button onclick="switchView('light-v10')">Light View</button>
+            <button onclick="switchView('dark-v10')">Dark View</button>
         </div>
 
 
@@ -241,8 +274,13 @@
     });
 
         function switchView(styleId) {
-        var styleUrl = 'mapbox://styles/mapbox/' + styleId;
-        map.setStyle(styleUrl);
+            var styleUrl = 'mapbox://styles/mapbox/' + styleId;
+            if (map) {
+                map.setStyle(styleUrl);
+                map.on('style.load', function() {
+                    addMapLayersAndSources(); // Re-add layers and sources
+                    });
+                }
         }
 
 

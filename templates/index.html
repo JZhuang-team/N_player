@@ -102,19 +102,42 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         /* Right Sidebar styles */
-.right-sidebar {
+        .right-sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            width: 150px;
+            z-index: 1000; /* High z-index to ensure visibility above the map */
+        }
+
+        .right-sidebar button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+
+        /* New division for map view buttons */
+.map-view-buttons {
     position: absolute;
-    top: 20px;
+    bottom: 20px;
     right: 20px;
+    width: 175px;
+    z-index: 1000;
     background: #fff;
-    border: 1px solid #ccc;
     padding: 10px;
     border-radius: 5px;
-    width: 150px;
-    z-index: 1000; /* High z-index to ensure visibility above the map */
+    border: 1px solid #ccc;
 }
 
-.right-sidebar button {
+.map-view-buttons button {
     width: 100%;
     padding: 8px;
     margin-bottom: 5px;
@@ -123,6 +146,7 @@
     border: none;
     border-radius: 3px;
 }
+        
 
     </style>
 </head>
@@ -209,14 +233,20 @@
             <div id="map" class="map-canvas"></div>
         </div>
         <div class="right-sidebar">
+            <h6 style="text-align: center;"><b>Parameters</b></h6>
             <button onclick="fetchData('consequence')">Consequence</button>
             <button onclick="fetchData('vulnerability')">Vulnerability</button>
             <button onclick="fetchData('threat')">Threat</button>
             <button onclick="fetchData('risk')">Risk</button>
             <button onclick="fetchData('investment')">Investment</button>
-            <button onclick="switchView('streets-v11')">Streets View</button>
-            <button onclick="switchView('satellite-v9')">Satellite View</button>
             <div id="dataDisplay"></div>
+        </div>
+        <div class="map-view-buttons">
+            <h6 style="text-align: center;"><b>Change Map Style</b></h6>
+            <button onclick="switchView('streets-v11')">Streets View</button>
+            <button onclick="switchView('satellite-streets-v11')">Satellite View</button>
+            <button onclick="switchView('light-v10')">Light View</button>
+            <button onclick="switchView('dark-v10')">Dark View</button>
         </div>
         
     </div>
