@@ -125,28 +125,50 @@
         }
 
         /* New division for map view buttons */
-.map-view-buttons {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 175px;
-    z-index: 1000;
-    background: #fff;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
+        .map-view-buttons {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            z-index: 1000;
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
 
-.map-view-buttons button {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 5px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 3px;
-}
-        
+        .map-view-buttons button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+
+        /* Horizontal button group styling */
+        .btn-group-horizontal {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .btn-group-horizontal .btn-map {
+            flex: 1; /* Distribute space evenly */
+            margin: 0 2px; /* Add small spacing between buttons */
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-group-horizontal .btn-map:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+                
 
 
     </style>
@@ -242,10 +264,12 @@
         
         <div class="map-view-buttons">
             <h6 style="text-align: center;"><b>Change Map Style</b></h6>
-            <button onclick="switchView('streets-v11')">Streets View</button>
-            <button onclick="switchView('satellite-streets-v11')">Satellite View</button>
-            <button onclick="switchView('light-v10')">Light View</button>
-            <button onclick="switchView('dark-v10')">Dark View</button>
+            <div class="btn-group btn-group-horizontal" role="group" aria-label="Map Style Buttons">
+                <button type="button" class="btn btn-map" onclick="switchView('streets-v11')">Streets</button>
+                <button type="button" class="btn btn-map" onclick="switchView('satellite-streets-v11')">Satellite</button>
+                <button type="button" class="btn btn-map" onclick="switchView('light-v10')">Light</button>
+                <button type="button" class="btn btn-map" onclick="switchView('dark-v10')">Dark</button>
+            </div>
         </div>
 
 
