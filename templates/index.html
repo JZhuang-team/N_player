@@ -130,7 +130,7 @@
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 175px;
+            width: 300px;
             z-index: 1000;
             background: #fff;
             padding: 10px;
@@ -146,6 +146,25 @@
             color: white;
             border: none;
             border-radius: 3px;
+        }
+        /* Horizontal button group styling */
+        .btn-group-horizontal {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        .btn-group-horizontal .btn-map {
+            flex: 1; /* Distribute space evenly */
+            margin: 0 2px; /* Add small spacing between buttons */
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-group-horizontal .btn-map:hover {
+            background-color: #0056b3; /* Darker shade on hover */
         }
         
         .right-sidebar {
@@ -287,10 +306,11 @@
         
         <div class="map-view-buttons">
             <h6 style="text-align: center;"><b>Change Map Style</b></h6>
-            <button onclick="switchView('streets-v11')">Streets View</button>
-            <button onclick="switchView('satellite-streets-v11')">Satellite View</button>
-            <button onclick="switchView('light-v10')">Light View</button>
-            <button onclick="switchView('dark-v10')">Dark View</button>
+            <div class="btn-group btn-group-horizontal" role="group" aria-label="Map Style Buttons">
+                <button type="button" class="btn btn-map" onclick="switchView('streets-v11')">Streets</button>
+                <button type="button" class="btn btn-map" onclick="switchView('satellite-streets-v11')">Satellite</button>
+                <button type="button" class="btn btn-map" id="toggle-dark-light" onclick="toggleDarkLight()">Light</button>
+            </div>
         </div>
         
     </div>
@@ -445,6 +465,20 @@
             });
 });
 
+
+        // Function to toggle between dark and light views
+        function toggleDarkLight() {
+            const toggleButton = document.getElementById('toggle-dark-light');
+            const currentText = toggleButton.innerText;
+
+            if (currentText === 'Light') {
+                switchView('dark-v10'); // Switch to dark view
+                toggleButton.innerText = 'Dark'; // Update button text
+            } else {
+                switchView('light-v10'); // Switch to light view
+                toggleButton.innerText = 'Light'; // Update button text
+            }
+        }
         // Synchronize slider and input box for Total Layers
         function syncSlider(id) {
             const slider = document.getElementById(id);
@@ -743,44 +777,47 @@
             }
 
             function updateParameters() {
-                fetch('/api/metrics')
-                    .then(response => response.json())
-                    .then(data => {
-                        const tableHead = document.getElementById('parametersTable').getElementsByTagName('thead')[0];
-                        tableHead.innerHTML = '<tr><th>Parameter</th><th>Student Union</th><th>Mary Talbert Road</th></tr>'; // Update dynamically as needed
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    const tableHead = document.getElementById('parametersTable').getElementsByTagName('thead')[0];
+                    tableHead.innerHTML = '<tr><th>Parameter</th><th>Student Union</th><th>Another Layer Name</th></tr>';
 
-                        const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];
-                        tableBody.innerHTML = '';
+                    const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = '';
 
-                        Object.keys(data).forEach(key => {
-                            // Skip adding a row for the 'layers' key
-                            if (key !== 'layers') {
-                                let row = tableBody.insertRow();
-                                let cellName = row.insertCell(0);
-                                cellName.innerHTML = key.charAt(0).toUpperCase() + key.slice(1); // Capitalize the first letter
+                    // Define the desired order of rows
+                    const order = ['vulnerability', 'threat', 'consequence', 'risk', 'investment'];
 
-                                // Check if the property is an array before iterating
-                                if (Array.isArray(data[key])) {
-                                    data[key].forEach((value, index) => {
-                                        let cell = row.insertCell(index + 1);
-                                        cell.innerHTML = Number.isFinite(value) ? value.toLocaleString() : value; // Format numbers nicely
-                                    });
-                                } else {
-                                    // Handle non-array data by just putting it in the second column
-                                    let cell = row.insertCell(1);
-                                    cell.innerHTML = data[key];
-                                    cell.colSpan = 2; // Span across two columns if only one value is present
-                                }
+                    order.forEach(key => {
+                        if (data[key] !== undefined) {  // Check if the key exists in the data
+                            let row = tableBody.insertRow();
+                            let cellName = row.insertCell(0);
+                            cellName.innerHTML = key.charAt(0).toUpperCase() + key.slice(1); // Capitalize the first letter
+
+                            // Check if the property is an array before iterating
+                            if (Array.isArray(data[key])) {
+                                data[key].forEach((value, index) => {
+                                    let cell = row.insertCell(index + 1);
+                                    cell.innerHTML = Number.isFinite(value) ? value.toLocaleString() : value; // Format numbers nicely
+                                });
+                            } else {
+                                // Handle non-array data by just putting it in the second column
+                                let cell = row.insertCell(1);
+                                cell.innerHTML = data[key];
+                                cell.colSpan = 2; // Span across two columns if only one value is present
                             }
-                        });
-
-                        // Show the sidebar only after the table has been populated
-                        document.querySelector('.right-sidebar').style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Error fetching data:', error);
+                        }
                     });
-            }
+
+                    // Show the sidebar only after the table has been populated
+                    document.querySelector('.right-sidebar').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+
 
 
 
