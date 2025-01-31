@@ -103,6 +103,7 @@
         }
         /* Right Sidebar styles */
         .right-sidebar {
+            display: block;
             position: absolute;
             top: 20px;
             right: 20px;
@@ -125,28 +126,64 @@
         }
 
         /* New division for map view buttons */
-.map-view-buttons {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 175px;
-    z-index: 1000;
-    background: #fff;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-}
+        .map-view-buttons {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 175px;
+            z-index: 1000;
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
 
-.map-view-buttons button {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 5px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 3px;
-}
+        .map-view-buttons button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
         
+        .right-sidebar {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            width: 300px; /* Adjusted width */
+            z-index: 1000; /* High z-index to ensure visibility above the map */
+            overflow-y: auto; /* Adds scroll if content is too long */
+        }
+
+        .table {
+            border-collapse: separate; /* Ensures that borders are separated */
+            border-spacing: 0; /* Removes space between borders */
+        }
+
+        .table th, .table td {
+            padding: 8px; /* Adds more padding inside cells */
+            border: 0.5px solid #000; /* Makes cell borders black and visible */
+        }
+
+        .table-bordered th, .table-bordered td {
+            border: 0.5px solid #000; /* Ensures borders are visible but subtle */
+        }
+
+        /* This ensures the table headers stick to the top when scrolling through a long list */
+        .table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            z-index: 10;
+        }
+
 
     </style>
 </head>
@@ -232,15 +269,22 @@
             <!-- Placeholder for actual map content -->
             <div id="map" class="map-canvas"></div>
         </div>
+
         <div class="right-sidebar">
-            <h6 style="text-align: center;"><b>Parameters</b></h6>
-            <button onclick="fetchData('consequence')">Consequence</button>
-            <button onclick="fetchData('vulnerability')">Vulnerability</button>
-            <button onclick="fetchData('threat')">Threat</button>
-            <button onclick="fetchData('risk')">Risk</button>
-            <button onclick="fetchData('investment')">Investment</button>
-            <div id="dataDisplay"></div>
+            <h6 style="text-align: center;"><b>Model Output</b></h6>
+            <table id="parametersTable" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Model Output</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data rows will be added here dynamically -->
+                </tbody>
+            </table>
         </div>
+        
         <div class="map-view-buttons">
             <h6 style="text-align: center;"><b>Change Map Style</b></h6>
             <button onclick="switchView('streets-v11')">Streets View</button>
@@ -277,6 +321,8 @@
                     'data': roads
                 });
 
+
+                updateParameters();
                 addMapLayersAndSources(); // Initial layer and source setup
 
                 // Define and add the building and road layers
@@ -695,6 +741,47 @@
                     });
                 }
             }
+
+            function updateParameters() {
+                fetch('/api/metrics')
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableHead = document.getElementById('parametersTable').getElementsByTagName('thead')[0];
+                        tableHead.innerHTML = '<tr><th>Parameter</th><th>Student Union</th><th>Mary Talbert Road</th></tr>'; // Update dynamically as needed
+
+                        const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];
+                        tableBody.innerHTML = '';
+
+                        Object.keys(data).forEach(key => {
+                            // Skip adding a row for the 'layers' key
+                            if (key !== 'layers') {
+                                let row = tableBody.insertRow();
+                                let cellName = row.insertCell(0);
+                                cellName.innerHTML = key.charAt(0).toUpperCase() + key.slice(1); // Capitalize the first letter
+
+                                // Check if the property is an array before iterating
+                                if (Array.isArray(data[key])) {
+                                    data[key].forEach((value, index) => {
+                                        let cell = row.insertCell(index + 1);
+                                        cell.innerHTML = Number.isFinite(value) ? value.toLocaleString() : value; // Format numbers nicely
+                                    });
+                                } else {
+                                    // Handle non-array data by just putting it in the second column
+                                    let cell = row.insertCell(1);
+                                    cell.innerHTML = data[key];
+                                    cell.colSpan = 2; // Span across two columns if only one value is present
+                                }
+                            }
+                        });
+
+                        // Show the sidebar only after the table has been populated
+                        document.querySelector('.right-sidebar').style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                    });
+            }
+
 
 
     </script>

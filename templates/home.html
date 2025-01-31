@@ -147,7 +147,7 @@
             border-radius: 3px;
         }
 
-        /* Horizontal button group styling */
+       /* Horizontal button group styling */
         .btn-group-horizontal {
             display: flex;
             flex-direction: row;
@@ -167,8 +167,7 @@
 
         .btn-group-horizontal .btn-map:hover {
             background-color: #0056b3; /* Darker shade on hover */
-        }
-                
+        } 
 
 
     </style>
@@ -267,11 +266,9 @@
             <div class="btn-group btn-group-horizontal" role="group" aria-label="Map Style Buttons">
                 <button type="button" class="btn btn-map" onclick="switchView('streets-v11')">Streets</button>
                 <button type="button" class="btn btn-map" onclick="switchView('satellite-streets-v11')">Satellite</button>
-                <button type="button" class="btn btn-map" onclick="switchView('light-v10')">Light</button>
-                <button type="button" class="btn btn-map" onclick="switchView('dark-v10')">Dark</button>
+                <button type="button" class="btn btn-map" id="toggle-dark-light" onclick="toggleDarkLight()">Light</button>
             </div>
         </div>
-
 
     </div>
 
@@ -296,6 +293,20 @@
                     addMapLayersAndSources(); // Re-add layers and sources
                     });
                 }
+        }
+
+        // Function to toggle between dark and light views
+        function toggleDarkLight() {
+            const toggleButton = document.getElementById('toggle-dark-light');
+            const currentText = toggleButton.innerText;
+
+            if (currentText === 'Light') {
+                switchView('dark-v10'); // Switch to dark view
+                toggleButton.innerText = 'Dark'; // Update button text
+            } else {
+                switchView('light-v10'); // Switch to light view
+                toggleButton.innerText = 'Light'; // Update button text
+            }
         }
 
 
