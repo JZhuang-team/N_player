@@ -222,10 +222,20 @@
                     <!-- Total Layers slider -->
                     <div class="form-group">
                         <label for="total_layers">Total Layers:</label>
-                        <div class="slider-container">
+                        <div class="slider-container" style="padding-bottom: 5%;">
                             <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="2" value="1" step="1" oninput="syncSlider('total_layers')">
                             <input type="number" id="total_layers_input" min="1" max="10" value="1" oninput="syncInput('total_layers')">
                         </div>
+                    </div>
+
+                    <label>Resource Type:</label>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="resourceGuards" name="resource_type[]" value="guards">
+                        <label class="custom-control-label" for="resourceGuards">Guards</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="resourceCamera" name="resource_type[]" value="camera">
+                        <label class="custom-control-label" for="resourceCamera">Camera</label>
                     </div>
 
                     <!-- Cost slider -->
