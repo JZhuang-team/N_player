@@ -195,5 +195,14 @@ def contact():
 def results():
     return index()
 
+@app.route('/api/student-density')
+def student_density():
+    try:
+        df = pd.read_csv('data/heatmap_data.csv')
+        json_data = df.to_dict(orient='records')
+        return jsonify(json_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8080)

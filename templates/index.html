@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Link to Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
     <style>
         /* Basic body styles */
         body {
@@ -203,6 +205,27 @@
             z-index: 10;
         }
 
+        #toggle-heatmap-btn {
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        #toggle-heatmap-btn:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+
+        #toggle-heatmap-btn.active {
+            background-color: #dc3545;
+        }
 
     </style>
 </head>
@@ -282,6 +305,17 @@
                     <button type="submit" class="btn btn-primary">Update</button>
                 </form>
             </div>
+
+            <!-- Heatmap Button -->
+            <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
+
+            <!-- Heatmap Time Slider -->
+            <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000;">
+                <label for="time-slider"><b>Select Time:</b></label>
+                <input type="range" id="time-slider" min="8" max="22" step="1" value="8" oninput="updateTime(this.value)">
+                <span id="time-display">8 AM</span>
+            </div>
+
         </div>
         <!-- Map Area -->
         <div class="map-area">
@@ -818,7 +852,161 @@
                 });
         }
 
+        let studentDensityData = {};
+        let currentHour = 0; // Default hour
+        let heatmapSource = null;
+        let heatmapLayer = null;
 
+        // Fetch CSV Data from Flask API
+        fetch('/api/student-density')
+            .then(response => response.json())
+            .then(data => {
+                    studentDensityData = data;
+                    console.log("Fetched Data:", studentDensityData);
+                    processCSVData(studentDensityData);
+                })
+            .catch(error => console.error('Error fetching CSV data:', error));
+
+        // Process CSV Data and Convert to GeoJSON
+        function processCSVData(data) {
+            let geoJSONData = {};
+
+            data.forEach(row => {
+                let time = row.Time;
+        
+                
+                if (!geoJSONData[time]) {
+                    geoJSONData[time] = [];
+                }
+
+                // Process each location for the current time
+                Object.keys(row).forEach(location => {
+                    if (location !== "Time") {
+                        let count = parseInt(row[location]) || 0;
+                        if (location in locationCoordinates) {
+                            geoJSONData[time].push({
+                                type: "Feature",
+                                geometry: {
+                                    type: "Point",
+                                    coordinates: locationCoordinates[location]
+                                },
+                                properties: {
+                                    count: count
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            studentDensityData = geoJSONData;
+
+            addHeatmapLayer();
+        }
+
+
+        const locationCoordinates = {
+            "Academ": [-78.784393, 43.009101], "Alfier": [-78.787108, 42.999924], "Alumni": [-78.781268, 43.000370],
+            "Baird": [-78.784439, 43.000057], "Baldy": [-78.786982, 43.000493], "Bell": [-78.787036, 43.001517],
+            "Bonner": [-78.788146, 43.001535], "Capen": [-78.789566, 43.000899], "CFA": [-78.782852, 43.000953],
+            "Clemen": [-78.785007, 43.000421], "Cooke": [-78.791437, 42.999958], "Davis": [-78.787253, 43.002752],
+            "Frnczk": [-78.791203, 43.001235], "Furnas": [-78.787096, 43.001927], "Grein": [-78.785320, 43.006544],
+            "Hoch": [-78.790764, 42.999941], "Jacobs": [-78.786973, 42.999546], "Jarvis": [-78.787084, 43.002328],
+            "Ketter": [-78.788202, 43.002563], "Knox": [-78.787744, 43.001018], "Math": [-78.792770, 43.001205],
+            "Norton": [-78.788556, 43.001074], "Nsc": [-78.791720, 43.000707], "Obrian": [-78.788007, 43.000376],
+            "Park": [-78.787941, 42.999755], "Slee": [-78.783992, 43.000371], "Spaulding": [-78.784249, 43.009584],
+            "Talbert": [-78.790412, 43.000681], "Wilkeson": [-78.784019, 43.008842]
+        };
+
+        function addHeatmapLayer() {
+
+            let timeKey = currentHour;
+
+            if (!map.getSource('heatmap')) {
+                map.addSource('heatmap', {
+                    type: 'geojson',
+                    data: {
+                        type: "FeatureCollection",
+                        features: studentDensityData[timeKey] || []
+                    }
+                });
+
+                map.addLayer({
+                    id: 'heatmap-layer',
+                    type: 'heatmap',
+                    source: 'heatmap',
+                    paint: {
+                        'heatmap-weight': ["interpolate", ["linear"], ["get", "count"], 0, 0, 3000, 1],
+                        'heatmap-intensity': ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
+                        'heatmap-color': [
+                            "interpolate",
+                            ["linear"],
+                            ["heatmap-density"],
+                            0, "rgba(0, 0, 255, 0)",
+                            0.2, "blue",
+                            0.4, "cyan",
+                            0.6, "lime",
+                            0.8, "yellow",
+                            1, "red"
+                        ],
+                        'heatmap-radius': ["interpolate", ["linear"], ["zoom"], 0, 2, 15, 30],
+                        'heatmap-opacity': 0.6
+                    }
+                });
+            } else {
+                console.log("Updating existing heatmap...")
+                map.getSource('heatmap').setData({
+                    type: "FeatureCollection",
+                    features: studentDensityData[timeKey] || []
+                });
+            }
+        }
+
+        function removeHeatmapLayer() {
+            if (map.getLayer('heatmap-layer')) {
+                map.removeLayer('heatmap-layer');
+            }
+            if (map.getSource('heatmap')) {
+                map.removeSource('heatmap');
+            }
+        }
+
+        let heatmapVisible = false;
+
+        function toggleHeatmap() {
+            heatmapVisible = !heatmapVisible;
+            const sliderContainer = document.getElementById("time-slider-container")
+            const button = document.getElementById("toggle-heatmap-btn")
+
+            if (heatmapVisible) {
+                sliderContainer.style.display = "block";
+                button.innerText = "Hide Heatmap";
+                button.classList.add("active");
+                addHeatmapLayer();
+            } else {
+                sliderContainer.style.display = "none";
+                button.innerText = "Show Heatmap";
+                button.classList.remove("active");
+                removeHeatmapLayer();
+            }
+        }
+
+
+        function updateTime(hour) {
+            if (hour == 12) {
+                currentHour = "12PM"
+            } else if (hour > 12) {
+                currentHour = `${hour - 12}PM`;
+            } else {
+                currentHour = `${hour}AM`;
+            }
+            
+            document.getElementById("time-display").innerText = currentHour;
+            
+            if (heatmapVisible) {
+                addHeatmapLayer();
+            }
+        }
 
 
     </script>
