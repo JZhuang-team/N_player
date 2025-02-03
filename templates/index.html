@@ -246,11 +246,6 @@
                 <form action="/results" method="post">
                     <!-- Model Type selection -->
                     <div class="form-group">
-                        <label>Model Type:</label>
-                        <div class="custom-control custom-radio">
-                            <input type="radio" id="prob" name="model_type" class="custom-control-input" value="prob" checked>
-                            <label class="custom-control-label" for="prob">Probabilistic Model</label>
-                        </div>
                         <!--
                         <div class="custom-control custom-radio mt-2">
                             <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
@@ -329,7 +324,6 @@
                 <thead>
                     <tr>
                         <th>Model Output</th>
-                        <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -811,46 +805,66 @@
             }
 
             function updateParameters() {
-            fetch('/api/metrics')
-                .then(response => response.json())
-                .then(data => {
-                    const tableHead = document.getElementById('parametersTable').getElementsByTagName('thead')[0];
-                    tableHead.innerHTML = '<tr><th>Parameter</th><th>Student Union</th><th>Another Layer Name</th></tr>';
-
-                    const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];
-                    tableBody.innerHTML = '';
-
-                    // Define the desired order of rows
-                    const order = ['vulnerability', 'threat', 'consequence', 'risk', 'investment'];
-
-                    order.forEach(key => {
-                        if (data[key] !== undefined) {  // Check if the key exists in the data
-                            let row = tableBody.insertRow();
-                            let cellName = row.insertCell(0);
-                            cellName.innerHTML = key.charAt(0).toUpperCase() + key.slice(1); // Capitalize the first letter
-
-                            // Check if the property is an array before iterating
-                            if (Array.isArray(data[key])) {
-                                data[key].forEach((value, index) => {
-                                    let cell = row.insertCell(index + 1);
-                                    cell.innerHTML = Number.isFinite(value) ? value.toLocaleString() : value; // Format numbers nicely
-                                });
-                            } else {
-                                // Handle non-array data by just putting it in the second column
-                                let cell = row.insertCell(1);
-                                cell.innerHTML = data[key];
-                                cell.colSpan = 2; // Span across two columns if only one value is present
-                            }
+                fetch('/api/metrics')
+                    .then(response => response.json())
+                    .then(data => {
+                        const tableHead = document.getElementById('parametersTable').getElementsByTagName('thead')[0];
+                        // Use data.layers to decide how many columns to create
+                        if (data.layers === 1) {
+                            tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th></tr>';
+                        } else {
+                            tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th><th>Layer 2</th></tr>';
                         }
-                    });
 
-                    // Show the sidebar only after the table has been populated
-                    document.querySelector('.right-sidebar').style.display = 'block';
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                });
-        }
+                        const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];
+                        tableBody.innerHTML = '';
+
+                        // Define the order in which rows should appear
+                        const order = ['vulnerability', 'threat', 'consequence', 'risk', 'investment'];
+
+                        order.forEach(key => {
+                            if (data[key] !== undefined) {
+                                let row = tableBody.insertRow();
+                                let cellName = row.insertCell(0);
+                                // Capitalize the first letter of the parameter name
+                                cellName.innerHTML = key.charAt(0).toUpperCase() + key.slice(1);
+
+                                // Check if the data for this key is an array
+                                if (Array.isArray(data[key])) {
+                                    if (data.layers === 1) {
+                                        // Only one layer column needed
+                                        let cell = row.insertCell(1);
+                                        cell.innerHTML = Number.isFinite(data[key][0])
+                                            ? data[key][0].toLocaleString()
+                                            : data[key][0];
+                                    } else {
+                                        // Add a cell for each layer
+                                        data[key].forEach((value, index) => {
+                                            let cell = row.insertCell(index + 1);
+                                            cell.innerHTML = Number.isFinite(value)
+                                                ? value.toLocaleString()
+                                                : value;
+                                        });
+                                    }
+                                } else {
+                                    // For non-array data, place it in one cell
+                                    let cell = row.insertCell(1);
+                                    cell.innerHTML = data[key];
+                                    if (data.layers !== 1) {
+                                        // If two layers are expected, span the cell across both columns
+                                        cell.colSpan = 2;
+                                    }
+                                }
+                            }
+                        });
+
+                        // Show the sidebar after the table has been populated
+                        document.querySelector('.right-sidebar').style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                    });
+            }
 
         let studentDensityData = {};
         let currentHour = 0; // Default hour
