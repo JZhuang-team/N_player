@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Index Map</title>
-    <!-- Link to Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
@@ -13,221 +12,7 @@
     <!-- Link to Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    
-    <style>
-        /* Basic body styles */
-        body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f0f0;
-        }
-
-        /* Navbar styles for the top navigation bar */
-        .navbar {
-            background-color: #343a40;
-            padding: 10px 20px;
-            color: white;
-        }
-        .navbar .nav-link {
-            color: white !important;
-        }
-
-        /* Main content area that holds the map and legend */
-        .main-content {
-            display: flex;
-            height: 100vh; /* Full height for the main content area */
-        }
-
-        /* Sidebar section that holds the legend */
-        .sidebar {
-            background-color: #ffffff;
-            width: 300px;
-            padding: 20px;
-            border-right: 1px solid #ddd;
-        }
-        /* Sidebar header */
-        .sidebar h5 {
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        /* Sidebar legend styles */
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            border-radius: 3px;
-        }
-
-        /* Map area section */
-        .map-area {
-            flex-grow: 1;
-            position: relative;
-            background-color: #e6e6e6;
-        }
-
-        /* Position of the top-right buttons on the map */
-        .map-area .top-right-buttons {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
-
-        /* Button styling for map options */
-        .btn-map {
-            background-color: #007bff;
-            color: white;
-            margin-right: 10px;
-        }
-
-        /* Full screen layout for the map view */
-        .map-canvas {
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-        }
-
-        /* Footer for map-related actions (like "Create Report") */
-        .map-footer {
-            position: absolute;
-            bottom: 10px;
-            left: 20px;
-            background-color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        /* Right Sidebar styles */
-        .right-sidebar {
-            display: block;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 5px;
-            width: 150px;
-            z-index: 1000; /* High z-index to ensure visibility above the map */
-        }
-
-        .right-sidebar button {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 5px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-        }
-
-        /* New division for map view buttons */
-        .map-view-buttons {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            z-index: 1000;
-            background: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        .map-view-buttons button {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 5px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-        }
-        /* Horizontal button group styling */
-        .btn-group-horizontal {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-        }
-        .btn-group-horizontal .btn-map {
-            flex: 1; /* Distribute space evenly */
-            margin: 0 2px; /* Add small spacing between buttons */
-            padding: 8px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            transition: background-color 0.3s ease;
-        }
-        .btn-group-horizontal .btn-map:hover {
-            background-color: #0056b3; /* Darker shade on hover */
-        }
-        
-        .right-sidebar {
-            display: none;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 5px;
-            width: 300px; /* Adjusted width */
-            z-index: 1000; /* High z-index to ensure visibility above the map */
-            overflow-y: auto; /* Adds scroll if content is too long */
-        }
-
-        .table {
-            border-collapse: separate; /* Ensures that borders are separated */
-            border-spacing: 0; /* Removes space between borders */
-        }
-
-        .table th, .table td {
-            padding: 8px; /* Adds more padding inside cells */
-            border: 0.5px solid #000; /* Makes cell borders black and visible */
-        }
-
-        .table-bordered th, .table-bordered td {
-            border: 0.5px solid #000; /* Ensures borders are visible but subtle */
-        }
-
-        /* This ensures the table headers stick to the top when scrolling through a long list */
-        .table thead th {
-            position: sticky;
-            top: 0;
-            background-color: #fff;
-            z-index: 10;
-        }
-
-        #toggle-heatmap-btn {
-            background-color: #28a745;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-
-        #toggle-heatmap-btn:hover {
-            background-color: #218838;
-            transform: scale(1.05);
-        }
-
-        #toggle-heatmap-btn.active {
-            background-color: #dc3545;
-        }
-
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
     <!-- Main Content: Sidebar + Map Area -->
@@ -263,14 +48,27 @@
                         </div>
                     </div>
 
-                    <!-- Cost slider -->
-                    <div class="form-group">
-                        <label for="C_bar_init">Resource:</label>
-                        <div class="slider-container">
-                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value={{C_bar_init}} oninput="syncSlider('C_bar_init')">
-                            <input type="number" id="C_bar_init_input" min="0" max="500" value={{C_bar_init}} step="5" oninput="syncInput('C_bar_init')">
+                    <div class="resource-type">
+                        <label>Resource Type:</label>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="resourceGuards" name="resource_type[]" value="guards">
+                            <label class="custom-control-label" for="resourceGuards">Guards</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="resourceCamera" name="resource_type[]" value="camera">
+                            <label class="custom-control-label" for="resourceCamera">Camera</label>
                         </div>
                     </div>
+
+                    <!-- Cost slider -->
+                    <div class="form-group">
+                        <label for="C_bar_init">Resource (K/$):</label>
+                        <div class="slider-container">
+                          <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
+                          <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                        </div>
+                    </div>
+
                     <!-- Attack Type Selection -->
                     <div class="form-group">
                         <label>Attack Types:</label>

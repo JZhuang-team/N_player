@@ -1,0 +1,180 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+
+.navbar {
+    background-color: #343a40;
+    padding: 10px 20px;
+    color: white;
+}
+.navbar .nav-link {
+    color: white !important;
+}
+
+/* Main content area that holds the map d legend */
+.main-content {
+    display: flex;
+    height: 100vh; /* Full height for the main content area */
+}
+
+/* Sidebar section that holds the legend */
+.sidebar {
+    background-color: #ffffff;
+    width: 300px;
+    padding: 20px;
+    border-right: 1px solid #ddd;
+}
+/* Sidebar header */
+.sidebar h5 {
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+/* Sidebar legend styles */
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border-radius: 3px;
+}
+
+/* Map area section */
+.map-area {
+    flex-grow: 1;
+    position: relative;
+    background-color: #e6e6e6;
+}
+
+/* Position of the top-right buttons on the map */
+.map-area .top-right-buttons {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+/* Button styling for map options */
+.btn-map {
+    background-color: #007bff;
+    color: white;
+    margin-right: 10px;
+}
+
+/* Full screen layout for the map view */
+.map-canvas {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+}
+
+/* Footer for map-related actions (like "Create Report") */
+.map-footer {
+    position: absolute;
+    bottom: 10px;
+    left: 20px;
+    background-color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+/* Right Sidebar styles */
+.right-sidebar {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    width: 150px;
+    z-index: 1000; /* High z-index to ensure visibility above the map */
+}
+
+.right-sidebar button {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+
+/* New division for map view buttons */
+.map-view-buttons {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    z-index: 1000;
+    background: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.map-view-buttons button {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+
+/* Horizontal button group styling */
+.btn-group-horizontal {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.btn-group-horizontal .btn-map {
+    flex: 1; /* Distribute space evenly */
+    margin: 0 2px; /* Add small spacing between buttons */
+    padding: 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-group-horizontal .btn-map:hover {
+    background-color: #0056b3;
+}
+
+#toggle-heatmap-btn {
+    background-color: #28a745;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#toggle-heatmap-btn:hover {
+    background-color: #218838;
+    transform: scale(1.05);
+}
+
+#toggle-heatmap-btn.active {
+    background-color: #dc3545;
+}
+
+.resource-type {
+    margin-bottom: 15px;
+}
