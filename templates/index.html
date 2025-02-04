@@ -166,7 +166,15 @@
                     'type': 'geojson',
                     'data': roads
                 });
-
+                
+                // Check if a resource slider value is saved in localStorage
+                const savedValue = localStorage.getItem('C_bar_init');
+                if (savedValue !== null) {
+                    const slider = document.getElementById('C_bar_init');
+                    const input = document.getElementById('C_bar_init_input');
+                    slider.value = savedValue;
+                    input.value = savedValue;
+                }
 
                 updateParameters();
                 addMapLayersAndSources(); // Initial layer and source setup
