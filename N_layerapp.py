@@ -105,7 +105,7 @@ def initialization(_nLayers, C_bar_init):
     s_init = [500 for i in range(1, _nLayers+1)]
     alpha_init = [0.5] * _nLayers
     beta_init = [1 / _nLayers] * _nLayers
-    theta_init = [0.4] * _nLayers
+    theta_init = [0.04] * _nLayers
     cost_init = [1 for i in range(1, _nLayers+1)]
     gamma_init = [1] + [gam**i for i in range(1, _nLayers)]
     obj_base = instance_nLY(s=s_init, alpha=alpha_init, beta=beta_init, theta=theta_init, cost=cost_init, gamma=gamma_init, C_bar=C_bar_init)
