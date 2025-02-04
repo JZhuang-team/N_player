@@ -42,11 +42,14 @@
                     <!-- Total Layers slider -->
                     <div class="form-group">
                         <label for="total_layers">Total Layers:</label>
-                        <div class="slider-container">
-                            <input type="range" class="slider" name="total_layers" id="total_layers" min="1" max="2" value={{total_layers}} step="1" oninput="syncSlider('total_layers')">
-                            <input type="number" id="total_layers_input" min="1" max="10" value= {{total_layers}} oninput="syncInput('total_layers')">
+                        <div class="button-container" style="padding-bottom: 5%;">
+                            <button type="button" class="btn btn-primary" id="layer1_btn" onclick="setLayer(1)">Layer 1</button>
+                            <button type="button" class="btn btn-secondary" id="layer2_btn" onclick="setLayer(2)">Layer 2</button>
                         </div>
+                        <input type="hidden" name="total_layers" id="total_layers" value="1">
                     </div>
+                    
+                    
 
                     <div class="resource-type">
                         <label>Resource Type:</label>
@@ -165,6 +168,12 @@
                     'type': 'geojson',
                     'data': roads
                 });
+
+                const buttonValue = localStorage.getItem("selectedLayer");
+                if (buttonValue !== null && buttonValue == 2) {
+                    document.getElementById("layer1_btn").className = "btn btn-secondary";
+                    document.getElementById("layer2_btn").className = "btn btn-primary";
+                }
                 
                 // Check if a resource slider value is saved in localStorage
                 const savedValue = localStorage.getItem('C_bar_init');
@@ -211,7 +220,7 @@
                 // Function to update layer visibility based on the slider value
                 function updateLayerVisibility() {
                     const layerSlider = document.getElementById('total_layers');
-                    const numberOfLayers = parseInt(layerSlider.value, 10);
+                    const numberOfLayers = buttonValue
 
                     if (numberOfLayers === 1) {
                         map.setLayoutProperty('building-layer', 'visibility', 'visible');
@@ -312,17 +321,41 @@
                 toggleButton.innerText = 'Light'; // Update button text
             }
         }
-        // Synchronize slider and input box for Total Layers
+        function setLayer(layer) {
+            document.getElementById("total_layers").value = layer;
+            updateButtonStyles(layer);
+            localStorage.setItem("selectedLayer", layer);
+
+        }
+
+        function updateButtonStyles(layer) {
+            document.getElementById("layer1_btn").className = layer === 1 ? "btn btn-primary" : "btn btn-secondary";
+            document.getElementById("layer2_btn").className = layer === 2 ? "btn btn-primary" : "btn btn-secondary";
+        }
+
+        // Maintain resource input syncing functions
         function syncSlider(id) {
             const slider = document.getElementById(id);
             const input = document.getElementById(id + '_input');
             input.value = slider.value;
+
+            if (id === 'C_bar_init') {
+                localStorage.setItem('C_bar_init', slider.value);
+            }
         }
 
         function syncInput(id) {
             const input = document.getElementById(id + '_input');
             const slider = document.getElementById(id);
-            slider.value = input.value;
+
+            if (id === 'total_layers') {
+                let value = parseInt(input.value);
+                if (value < 1) value = 1;
+                if (value > 2) value = 2;
+                setLayer(value); // Ensure buttons update
+            } else {
+                slider.value = input.value;
+            }
         }
         const buildings = {
             "type": "FeatureCollection",
