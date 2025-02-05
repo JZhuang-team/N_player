@@ -213,3 +213,12 @@ body {
 .resource-type {
     margin-bottom: 15px;
 }
+
+.form-control {
+    border: black solid 1px;
+}
+
+.sidebarHeaders {
+    font-size: large;
+    font-weight: 800;
+}

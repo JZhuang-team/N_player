@@ -41,10 +41,10 @@
 
                     <!-- Total Layers slider -->
                     <div class="form-group">
-                        <label for="total_layers">Total Layers:</label>
+                        <label for="total_layers" class="sidebarHeaders">Total Layers:</label>
                         <div class="button-container" style="padding-bottom: 5%;">
-                            <button type="button" class="btn btn-primary" id="layer1_btn" onclick="setLayer(1)">Layer 1</button>
-                            <button type="button" class="btn btn-secondary" id="layer2_btn" onclick="setLayer(2)">Layer 2</button>
+                            <button type="button" class="btn btn-primary" id="layer1_btn" onclick="setLayer(1)">1 Layer</button>
+                            <button type="button" class="btn btn-secondary" id="layer2_btn" onclick="setLayer(2)">2 Layers</button>
                         </div>
                         <input type="hidden" name="total_layers" id="total_layers" value="1">
                     </div>
@@ -52,20 +52,17 @@
                     
 
                     <div class="resource-type">
-                        <label>Resource Type:</label>
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="resourceGuards" name="resource_type[]" value="guards">
-                            <label class="custom-control-label" for="resourceGuards">Guards</label>
-                        </div>
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="resourceCamera" name="resource_type[]" value="camera">
-                            <label class="custom-control-label" for="resourceCamera">Camera</label>
-                        </div>
+                        <label class="sidebarHeaders" for="resourceType">Resource Type:</label>
+                        <select class="form-control" id="resourceType" name="resource_type">
+                            <option value="">Select a resource</option>
+                            <option value="guards">Guards</option>
+                            <option value="camera">Camera</option>
+                        </select>
                     </div>
 
                     <!-- Cost slider -->
                     <div class="form-group">
-                        <label for="C_bar_init">Resource (K/$):</label>
+                        <label for="C_bar_init" class="sidebarHeaders">Resource (K/$):</label>
                         <div class="slider-container">
                           <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
                           <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
@@ -74,7 +71,7 @@
 
                     <!-- Attack Type Selection -->
                     <div class="form-group">
-                        <label>Attack Types:</label>
+                        <label class="sidebarHeaders">Attack Types:</label>
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input" id="attackType1" name="attack_type[]" value="Type1">
                             <label class="custom-control-label" for="attackType1">Shooting</label>
