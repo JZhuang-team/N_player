@@ -188,3 +188,11 @@ body {
     font-size: large;
     font-weight: 800;
 }
+
+.submitButtons {
+    align-content: center;
+    align-self: center;
+    align-items: center;
+    width: 100%;
+    padding: 5%;
+}
