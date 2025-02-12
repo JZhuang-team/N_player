@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Index Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bostonMap.css') }}">
+</head>
+<body>
+    <div class="topnav">
+        <a class="active" href="#home">LayerApp</a>
+        <a href="{{ url_for('boston_map')}}">HeatMap</a>
+      </div>
+    <!-- Main Content: Sidebar + Map Area -->
+    <div class="main-content">
+        
+        <!-- Sidebar for the Legend and Map Controls -->
+        <div class="sidebar">
+            
+            <!-- Form container -->
+            <div class="form-container">
+                <div class="page-header">
+                    <h2></h2>
+                </div>
+
+                <!-- Model selection form -->
+                <form action="/results" method="post">
+                    <!-- Model Type selection -->
+                    <div class="form-group">
+                        <!--
+                        <div class="custom-control custom-radio mt-2">
+                            <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
+                            <label class="custom-control-label" for="stra">Strategic Model</label>
+                        </div>
+                    -->
+                    </div>
+
+                    <!-- Total Layers slider -->
+                    <div class="form-group">
+                        <label for="total_layers" class="sidebarHeaders">Total Layers:</label>
+                        <div class="button-container" style="padding-bottom: 5%;">
+                            <button type="button" class="btn btn-primary" id="layer1_btn" onclick="setLayer(1)">1 Layer</button>
+                            <button type="button" class="btn btn-secondary" id="layer2_btn" onclick="setLayer(2)">2 Layers</button>
+                        </div>
+                        <input type="hidden" name="total_layers" id="total_layers" value="1">
+                    </div>
+                    
+
+                    <div class="resource-type">
+                        <label class="sidebarHeaders" for="resourceType">Time:</label>
+                        <select class="form-control" id="resourceType" name="resource_type">
+                            <option value="">Select a Time</option>
+                            <option value="guards">Morning</option>
+                            <option value="camera">Afternoon</option>
+                            <option value="camera">Night</option>
+                        </select>
+                    </div>
+                    
+
+                    <div class="form-group">
+                        <label for="C_bar_init" class="sidebarHeaders">Budget:</label>
+                        <div class="slider-container">
+                          <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
+                          <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                        </div>
+                    </div>
+                      
+
+                    <!-- Attack Type Selection -->
+                    <div class="form-group">
+                        <label class="sidebarHeaders">Attractiveness:</label>
+                        
+                    </div>
+
+
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary submitButtons">Submit</button>
+                </form>
+            </div>
+
+        </div>
+        
+        <!-- Map Area -->
+        <div class="map-area">
+            <!-- Placeholder for actual map content -->
+            <div id="map" class="map-canvas"></div>
+        </div>
+
+    </div>
+
+</body>
+</html>

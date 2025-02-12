@@ -183,13 +183,9 @@ def index():
 def get_metrics():
     return jsonify(metrics_data)
 
-@app.route('/about')
-def about():
-    return render_template('about_template.html')
-
-@app.route('/contact')
-def contact():
-    return render_template('contact_template.html')
+@app.route('/bostonMap')
+def boston_map():
+    return render_template('bostonMap.html')
 
 @app.route('/results', methods=['POST'])
 def results():

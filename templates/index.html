@@ -15,9 +15,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
+
+    <div class="topnav">
+        <a class="active" href="#home">LayerApp</a>
+        <a href="{{ url_for('boston_map')}}">HeatMap</a>
+      </div>
+
     <!-- Main Content: Sidebar + Map Area -->
     <div class="main-content">
-        
         <!-- Sidebar for the Legend and Map Controls -->
         <div class="sidebar">
             

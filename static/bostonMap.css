@@ -94,39 +94,6 @@ body {
     background-size: cover;
 }
 
-/* Footer for map-related actions (like "Create Report") */
-.map-footer {
-    position: absolute;
-    bottom: 10px;
-    left: 20px;
-    background-color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-/* Right Sidebar styles */
-.right-sidebar {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: #fff;
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
-    width: 150px;
-    z-index: 1000; /* High z-index to ensure visibility above the map */
-}
-
-.right-sidebar button {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 5px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 3px;
-}
-
 /* New division for map view buttons */
 .map-view-buttons {
     position: absolute;
