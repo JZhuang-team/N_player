@@ -222,7 +222,8 @@
                 // Function to update layer visibility based on the slider value
                 function updateLayerVisibility() {
                     const layerSlider = document.getElementById('total_layers');
-                    const numberOfLayers = buttonValue
+                    const numberOfLayers = parseInt(layerSlider.value, 10);
+
 
                     if (numberOfLayers === 1) {
                         map.setLayoutProperty('building-layer', 'visibility', 'visible');
