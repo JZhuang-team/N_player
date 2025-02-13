@@ -207,16 +207,19 @@
 
                 // Function to update layer visibility based on the slider value
                 function updateLayerVisibility() {
-                    const layerSlider = document.getElementById('total_layers');
+                    const layerSlider = localStorage.getItem('selectedLayer');
                     const numberOfLayers = parseInt(layerSlider.value, 10);
+                    console.log(numberOfLayers + "valueee")
 
 
-                    if (numberOfLayers === 1) {
+                    if (layerSlider == 1) {
                         map.setLayoutProperty('building-layer', 'visibility', 'visible');
                         map.setLayoutProperty('road-layer', 'visibility', 'none');
-                    } else if (numberOfLayers === 2) {
+                        console.log('test1')
+                    } else if (layerSlider == 2) {
                         map.setLayoutProperty('building-layer', 'visibility', 'visible');
                         map.setLayoutProperty('road-layer', 'visibility', 'visible');
+                        console.log('test2')
                     }
                 }
 
@@ -314,6 +317,8 @@
             document.getElementById("total_layers").value = layer;
             updateButtonStyles(layer);
             localStorage.setItem("selectedLayer", layer);
+            console.log("layer value is : " + layer)
+            console.log(localStorage.getItem('selectedLayer'))
 
         }
 

@@ -40,16 +40,6 @@
                         </div>
                     -->
                     </div>
-
-                    <!-- Total Layers slider -->
-                    <div class="form-group">
-                        <label for="total_layers" class="sidebarHeaders">Total Layers:</label>
-                        <div class="button-container" style="padding-bottom: 5%;">
-                            <button type="button" class="btn btn-primary" id="layer1_btn" onclick="setLayer(1)">1 Layer</button>
-                            <button type="button" class="btn btn-secondary" id="layer2_btn" onclick="setLayer(2)">2 Layers</button>
-                        </div>
-                        <input type="hidden" name="total_layers" id="total_layers" value="1">
-                    </div>
                     
 
                     <div class="resource-type">
@@ -70,13 +60,14 @@
                           <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
-                      
 
-                    <!-- Attack Type Selection -->
                     <div class="form-group">
-                        <label class="sidebarHeaders">Attractiveness:</label>
-                        
-                    </div>
+                        <label for="num_attacks" class="sidebarHeaders">Number of Attacks:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="num_attacks" id="num_attacks" min="0" max="10" step="1" value="0" oninput="syncSlider('num_attacks')">
+                            <input type="number" id="num_attacks_input" name="num_attacks" min="0" max="10" value="0" step="1" oninput="syncInput('num_attacks')">
+                        </div>
+                    </div>                    
 
 
                     <!-- Submit button -->
@@ -95,4 +86,14 @@
     </div>
 
 </body>
+<script>
+    function syncSlider(id) {
+        document.getElementById(id + "_input").value = document.getElementById(id).value;
+    }
+
+    function syncInput(id) {
+        document.getElementById(id).value = document.getElementById(id + "_input").value;
+    }
+
+</script>
 </html>

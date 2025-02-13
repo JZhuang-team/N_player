@@ -160,7 +160,8 @@
             document.getElementById("total_layers").value = layer;
             updateButtonStyles(layer);
             localStorage.setItem("selectedLayer", layer);
-            console.log("layer value is : " + layer)
+            console.log("layer value is : " + typeof(layer) + layer)
+            console.log(localStorage.getItem('selectedLayer'))
         }
 
         function updateButtonStyles(layer) {
