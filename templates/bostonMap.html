@@ -87,6 +87,14 @@
 
 </body>
 <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; // Replace with your Mapbox access token
+        const map = new mapboxgl.Map({
+            container: 'map', 
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', 
+            center: [-71.05878548825, 42.366206886],
+            zoom: 12
+        });
+
     function syncSlider(id) {
         document.getElementById(id + "_input").value = document.getElementById(id).value;
     }
