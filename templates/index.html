@@ -93,11 +93,23 @@
             <!-- Heatmap Button -->
             <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
 
+            <!-- Heatmap Weekday Dropdown -->
+            <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000;">
+                <label for="weekday-dropdown"><b>Weekday:</b></label>
+                <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                </select>
+            </div>
+
             <!-- Heatmap Time Slider -->
             <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000;">
-                <label for="time-slider"><b>Select Time:</b></label>
-                <input type="range" id="time-slider" min="8" max="22" step="1" value="8" oninput="updateTime(this.value)">
-                <span id="time-display">8 AM</span>
+                <label for="time-slider"><b>Time:</b></label>
+                <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
+                <span id="time-display">8:00</span>
             </div>
 
         </div>
@@ -698,10 +710,9 @@
                     });
             }
 
-        let studentDensityData = {};
-        let currentHour = 0; // Default hour
-        let heatmapSource = null;
-        let heatmapLayer = null;
+            let studentDensityData = {};
+        let currentTime = "8:00";; // Default hour
+        let currentWeekday = "Monday";
 
         // Fetch CSV Data from Flask API
         fetch('/api/student-density')
@@ -715,39 +726,26 @@
 
         // Process CSV Data and Convert to GeoJSON
         function processCSVData(data) {
-            let geoJSONData = {};
+            let geoJSONData = {}; // Initialize the structured dataset
 
             data.forEach(row => {
-                let time = row.Time;
-        
-                
-                if (!geoJSONData[time]) {
-                    geoJSONData[time] = [];
+                const { Building, Time, Weekday, Student_Count_Building } = row;
+
+                if (!geoJSONData[Weekday]) {
+                    geoJSONData[Weekday] = {}; // Initialize the weekday if not present
                 }
 
-                // Process each location for the current time
-                Object.keys(row).forEach(location => {
-                    if (location !== "Time") {
-                        let count = parseInt(row[location]) || 0;
-                        if (location in locationCoordinates) {
-                            geoJSONData[time].push({
-                                type: "Feature",
-                                geometry: {
-                                    type: "Point",
-                                    coordinates: locationCoordinates[location]
-                                },
-                                properties: {
-                                    count: count
-                                }
-                            });
-                        }
-                    }
-                });
+                if (!geoJSONData[Weekday][Time]) {
+                    geoJSONData[Weekday][Time] = {}; // Initialize time slot if not present
+                }
+
+                // Store student count for the building inside the respective time slot
+                geoJSONData[Weekday][Time][Building] = Student_Count_Building;
             });
 
-            studentDensityData = geoJSONData;
+            //console.log("Processed Student Density Data:", geoJSONData);
 
-            addHeatmapLayer();
+            studentDensityData = geoJSONData;
         }
 
 
@@ -766,49 +764,71 @@
 
         function addHeatmapLayer() {
 
-            let timeKey = currentHour;
+            let timeKey = currentTime;
+            let weekdayKey = currentWeekday;
+
+            //console.log("Time Key: ", timeKey);  // Log to check
+            //console.log("Weekday Key: ", weekdayKey);  // Log to check
+
+            let rawData = studentDensityData[weekdayKey] && studentDensityData[weekdayKey][timeKey] ? studentDensityData[weekdayKey][timeKey] : {};
+            
+            //console.log("Features to be added to heatmap:", rawData);
+
+            let features = Object.keys(rawData).map(Building => {
+                if (locationCoordinates[Building]) {
+                    let [lon, lat] = locationCoordinates[Building];
+                    let count = rawData[Building];
+
+                    let sizeFactor = Math.min(0.00003 + count * 0.000005, 0.0004); // Smaller size
+
+                    let rectCoordinates = [
+                        [lon - sizeFactor, lat - sizeFactor * 0.6], // Bottom-left
+                        [lon + sizeFactor, lat - sizeFactor * 0.6], // Bottom-right
+                        [lon + sizeFactor, lat + sizeFactor * 0.6], // Top-right
+                        [lon - sizeFactor, lat + sizeFactor * 0.6], // Top-left
+                        [lon - sizeFactor, lat - sizeFactor * 0.6]  // Closing point
+                    ];
+
+                    return {
+                        type: "Feature",
+                        geometry: {
+                            type: "Polygon",
+                            coordinates: [rectCoordinates]
+                        },
+                        properties: {
+                            count: count
+                        }
+                    };
+                }
+                return null; // Ignore buildings without coordinates
+            }).filter(feature => feature !== null); // Remove null entries
 
             if (!map.getSource('heatmap')) {
                 map.addSource('heatmap', {
                     type: 'geojson',
                     data: {
                         type: "FeatureCollection",
-                        features: studentDensityData[timeKey] || []
+                        features: features || []
                     }
                 });
 
                 map.addLayer({
                     id: 'heatmap-layer',
-                    type: 'heatmap',
+                    type: 'fill',
                     source: 'heatmap',
                     paint: {
-                        'heatmap-weight': ["interpolate", ["linear"], ["get", "count"], 0, 0, 3000, 1],
-                        'heatmap-intensity': ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
-                        'heatmap-color': [
+                        'fill-color': [
                             "interpolate",
                             ["linear"],
-                            ["heatmap-density"],
-                            0, "rgba(0, 0, 255, 0)",
-                            0.2, "blue",
-                            0.4, "cyan",
-                            0.6, "lime",
-                            0.8, "yellow",
-                            1, "red"
+                            ["get", "count"],
+                            0, "rgba(0, 0, 255, 0.3)",
+                            50, "green",
+                            100, "yellow",
+                            200, "orange",
+                            400, "red",
+                            800, "darkred"
                         ],
-                        'heatmap-radius': ["interpolate", ["linear"], ["zoom"], 0, 5, 15, 70],
-                        'heatmap-opacity': 0.7
-                    }
-                });
-
-                map.addLayer({
-                    id: 'density-points',
-                    type: 'circle',
-                    source: 'heatmap',
-                    minzoom: 14,
-                    paint: {
-                        'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 10],
-                        'circle-color': 'white',
-                        'circle-opacity': 0
+                        'fill-opacity': 0.7
                     }
                 });
 
@@ -817,16 +837,16 @@
                     closeOnClick: false
                 });
 
-                map.on('mousemove', 'density-points', (e) => {
+                map.on('mousemove', 'heatmap-layer', (e) => {
                 const density = e.features[0].properties.count;
-                const coordinates = e.features[0].geometry.coordinates.slice();
+                const coordinates = e.lngLat;
 
                 popup.setLngLat(coordinates)
                     .setHTML(`<b>Student Count:</b> ${density}`)
                     .addTo(map);
                 });
 
-                map.on('mouseleave', 'density-points', () => {
+                map.on('mouseleave', 'heatmap-layer', () => {
                     popup.remove();
                 });
 
@@ -834,7 +854,7 @@
                 console.log("Updating existing heatmap...")
                 map.getSource('heatmap').setData({
                     type: "FeatureCollection",
-                    features: studentDensityData[timeKey] || []
+                    features: features
                 });
             }
         }
@@ -852,15 +872,19 @@
 
         function toggleHeatmap() {
             heatmapVisible = !heatmapVisible;
+
+            const dropdownContainer = document.getElementById('weekday-dropdown-container');
             const sliderContainer = document.getElementById("time-slider-container")
             const button = document.getElementById("toggle-heatmap-btn")
 
             if (heatmapVisible) {
+                dropdownContainer.style.display = "block";
                 sliderContainer.style.display = "block";
                 button.innerText = "Hide Heatmap";
                 button.classList.add("active");
                 addHeatmapLayer();
             } else {
+                dropdownContainer.style.display = "none";
                 sliderContainer.style.display = "none";
                 button.innerText = "Show Heatmap";
                 button.classList.remove("active");
@@ -868,17 +892,26 @@
             }
         }
 
+        function updateWeekday(weekday) {
+            currentWeekday = weekday;
+            //console.log("Selected Weekday: ", currentWeekday);
 
-        function updateTime(hour) {
-            if (hour == 12) {
-                currentHour = "12PM"
-            } else if (hour > 12) {
-                currentHour = `${hour - 12}PM`;
-            } else {
-                currentHour = `${hour}AM`;
+            // If the heatmap is visible, update the heatmap to reflect the changes
+            if (heatmapVisible) {
+                addHeatmapLayer();
             }
+        }
+
+
+        function updateTime(time) {
+
+            let hour = Math.floor(time);
+            let minutes = Math.round((time - hour) * 60);
             
-            document.getElementById("time-display").innerText = currentHour;
+            currentTime = `${hour}:${minutes.toString().padStart(2, '0')}`;
+            
+            document.getElementById("time-display").innerText = currentTime;
+            //console.log("Selected Time: ", currentTime);
             
             if (heatmapVisible) {
                 addHeatmapLayer();

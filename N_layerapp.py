@@ -194,7 +194,7 @@ def results():
 @app.route('/api/student-density')
 def student_density():
     try:
-        df = pd.read_csv('data/heatmap_data.csv')
+        df = pd.read_csv('data/student_data.csv')
         json_data = df.to_dict(orient='records')
         return jsonify(json_data)
     except Exception as e:
