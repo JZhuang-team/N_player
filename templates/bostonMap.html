@@ -14,94 +14,118 @@
 </head>
 <body>
     <div class="topnav">
-        <a href="{{url_for('index')}}">Campus Case</a>
-        <a href="{{ url_for('boston_map')}}">Boston Transit Case</a>
-      </div>
+        <a href="{{ url_for('index') }}">Campus Case</a>
+        <a href="{{ url_for('boston_map') }}">Boston Transit Case</a>
+    </div>
+
     <!-- Main Content: Sidebar + Map Area -->
     <div class="main-content">
-        
         <!-- Sidebar for the Legend and Map Controls -->
         <div class="sidebar">
-            
             <!-- Form container -->
             <div class="form-container">
                 <div class="page-header">
-                    <h2></h2>
+                    <h2>Boston Transit Case</h2>
                 </div>
 
                 <!-- Model selection form -->
-                <form action="/results" method="post">
-                    <!-- Model Type selection -->
-                    <div class="form-group">
-                        <!--
-                        <div class="custom-control custom-radio mt-2">
-                            <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
-                            <label class="custom-control-label" for="stra">Strategic Model</label>
-                        </div>
-                    -->
-                    </div>
-                    
-
+                <form action="/bostonMap" method="post">
+                    <!-- Time selection -->
                     <div class="resource-type">
                         <label class="sidebarHeaders" for="resourceType">Time:</label>
                         <select class="form-control" id="resourceType" name="resource_type">
                             <option value="">Select a Time</option>
-                            <option value="guards">Morning</option>
-                            <option value="camera">Afternoon</option>
-                            <option value="camera">Night</option>
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                            <option value="night">Night</option>
                         </select>
                     </div>
-                    
 
+                    <!-- Budget input -->
                     <div class="form-group">
                         <label for="C_bar_init" class="sidebarHeaders">Budget:</label>
                         <div class="slider-container">
-                          <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
-                          <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
+                            <input type="number" id="C_bar_init_input" name="C_bar_init" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
 
+                    <!-- Number of Attacks input -->
                     <div class="form-group">
                         <label for="num_attacks" class="sidebarHeaders">Number of Attacks:</label>
                         <div class="slider-container">
                             <input type="range" class="slider" name="num_attacks" id="num_attacks" min="0" max="10" step="1" value="0" oninput="syncSlider('num_attacks')">
                             <input type="number" id="num_attacks_input" name="num_attacks" min="0" max="10" value="0" step="1" oninput="syncInput('num_attacks')">
                         </div>
-                    </div>                    
-
+                    </div>
 
                     <!-- Submit button -->
                     <button type="submit" class="btn btn-primary submitButtons">Submit</button>
                 </form>
             </div>
 
+            <!-- Results Section -->
+            <div class="results" style="margin-top: 20px;">
+                <h3>Results</h3>
+                {% if chosen_station_names %}
+                    <p><strong>Budget:</strong> {{ budget }}</p>
+                    <p><strong>Number of Attacks:</strong> {{ num_attacks }}</p>
+
+                    <h4>Attack Targets and Results:</h4>
+                    <ul>
+                        {% for station, result in zip(chosen_station_names, attack_results) %}
+                            <li>{{ station }}: {{ result }}</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h4>Defense Allocations:</h4>
+                    <ul>
+                        {% for allocation in defense_allocations %}
+                            <li>{{ allocation }}</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h4>Attack Probabilities:</h4>
+                    <ul>
+                        {% for probability in attack_probabilities %}
+                            <li>{{ probability }}</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h4>Defender Success Probabilities:</h4>
+                    <ul>
+                        {% for probability in defender_success_probabilities %}
+                            <li>{{ probability }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No results to display. Submit the form to see results.</p>
+                {% endif %}
+            </div>
         </div>
-        
+
         <!-- Map Area -->
         <div class="map-area">
-            <!-- Placeholder for actual map content -->
             <div id="map" class="map-canvas"></div>
         </div>
-
     </div>
 
-</body>
-<script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; // Replace with your Mapbox access token
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; // Replace with your Mapbox access token
         const map = new mapboxgl.Map({
-            container: 'map', 
-            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', 
+            container: 'map',
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
             center: [-71.05878548825, 42.366206886],
             zoom: 12
         });
 
-    function syncSlider(id) {
-        document.getElementById(id + "_input").value = document.getElementById(id).value;
-    }
+        function syncSlider(id) {
+            document.getElementById(id + "_input").value = document.getElementById(id).value;
+        }
 
-    function syncInput(id) {
-        document.getElementById(id).value = document.getElementById(id + "_input").value;
-    }
-
-</script>
+        function syncInput(id) {
+            document.getElementById(id).value = document.getElementById(id + "_input").value;
+        }
+    </script>
+</body>
 </html>
