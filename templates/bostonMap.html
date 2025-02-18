@@ -112,20 +112,90 @@
 
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; // Replace with your Mapbox access token
+        
         const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
+            container: 'map', 
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', //'mapbox://styles/mapbox/light-v11', 
             center: [-71.05878548825, 42.366206886],
             zoom: 12
         });
-
+    
+        map.on('load', () => {
+    
+    
+            // Add Metro Lines
+            map.addSource('metro-lines', {
+                type: 'vector',
+                url: 'mapbox://quicksid.8o0hrbga'
+            });
+    
+            map.addLayer({
+                id: 'metro-lines-layer',
+                type: 'line',
+                source: 'metro-lines',
+                'source-layer': 'metro_lines-2tdkpe',
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': 5,
+                    'line-opacity': 0.9
+                },
+                filter: [
+                    'all',
+                    ['!=', ['get', 'color'], '#FFC72C'],  // Excluding lines with color '#FFC72C' (Yellow Bus Lines)
+                    ['!=', ['get', 'color'], '#008EAA']   // Excluding lines with color '#006595' (Boston Port Ferries)
+                ]
+            });
+    
+            // Add Metro Stations
+            map.addSource('metro-stations', {
+                type: 'vector',
+                url: 'mapbox://quicksid.1fwvc521'
+            });
+    
+            map.addLayer({
+                id: 'metro-stations-layer',
+                type: 'circle',
+                source: 'metro-stations',
+                'source-layer': 'metro_stations-9wh99v',
+                paint: {
+                    'circle-radius': 3,
+                    'circle-color': '#FFFFFF',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#000000',
+                    'circle-opacity': 0.9,
+                }
+            });
+    
+            const popup = new mapboxgl.Popup({
+                closeButton: false,
+                closeOnClick: false
+            });
+    
+            map.on('mousemove', 'metro-stations-layer', (e) => {
+                const features = e.features;
+                if (!features.length) return;
+    
+                const feature = features[0];
+                const stationName = feature.properties.stop_name;  // Get station name
+    
+                popup.setLngLat(e.lngLat)
+                    .setHTML(`<strong>${stationName}</strong>`)
+                    .addTo(map);
+            });
+    
+            map.on('mouseleave', 'metro-stations-layer', () => {
+                popup.remove();
+            });
+        });
+    
         function syncSlider(id) {
             document.getElementById(id + "_input").value = document.getElementById(id).value;
         }
-
+    
         function syncInput(id) {
             document.getElementById(id).value = document.getElementById(id + "_input").value;
         }
+    
     </script>
 </body>
 </html>
