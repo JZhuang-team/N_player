@@ -34,10 +34,10 @@
                     <div class="resource-type">
                         <label class="sidebarHeaders" for="resourceType">Time:</label>
                         <select class="form-control" id="resourceType" name="resource_type">
-                            <option value="">Select a Time</option>
-                            <option value="morning">Morning</option>
-                            <option value="afternoon">Afternoon</option>
-                            <option value="night">Night</option>
+                            <option value="" {% if resource_type == "" %}selected{% endif %}>Select a Time</option>
+                            <option value="morning" {% if resource_type == 'morning' %}selected{% endif %}>Morning</option>
+                            <option value="afternoon" {% if resource_type == 'afternoon' %}selected{% endif %}>Afternoon</option>
+                            <option value="night" {% if resource_type == 'night' %}selected{% endif %}>Night</option>
                         </select>
                     </div>
 
@@ -45,8 +45,10 @@
                     <div class="form-group">
                         <label for="C_bar_init" class="sidebarHeaders">Budget:</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="10000" step="1" value="0" oninput="syncSlider('C_bar_init')">
-                            <input type="number" id="C_bar_init_input" name="C_bar_init" min="0" max="10000" value="0" step="1" oninput="syncInput('C_bar_init')">
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="10000" step="1"
+                                value="{{ C_bar_init }}" oninput="syncSlider('C_bar_init')">
+                            <input type="number" id="C_bar_init_input" name="C_bar_init" min="0" max="10000"
+                                value="{{ C_bar_init }}" step="1" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
 
@@ -54,53 +56,18 @@
                     <div class="form-group">
                         <label for="num_attacks" class="sidebarHeaders">Number of Attacks:</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" name="num_attacks" id="num_attacks" min="0" max="114" step="1" value="0" oninput="syncSlider('num_attacks')">
-                            <input type="number" id="num_attacks_input" name="num_attacks" min="0" max="114" value="0" step="1" oninput="syncInput('num_attacks')">
+                            <input type="range" class="slider" name="num_attacks" id="num_attacks" min="0" max="114" step="1"
+                                value="{{ num_attacks }}" oninput="syncSlider('num_attacks')">
+                            <input type="number" id="num_attacks_input" name="num_attacks" min="0" max="114"
+                                value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
                         </div>
                     </div>
+
+
 
                     <!-- Submit button -->
                     <button type="submit" class="btn btn-primary submitButtons">Submit</button>
                 </form>
-            </div>
-
-            <!-- Results Section -->
-            <div class="results" style="margin-top: 20px;">
-                <h3>Results</h3>
-                {% if chosen_station_names %}
-                    <p><strong>Budget:</strong> {{ budget }}</p>
-                    <p><strong>Number of Attacks:</strong> {{ num_attacks }}</p>
-
-                    <h4>Attack Targets and Results:</h4>
-                    <ul>
-                        {% for station, result in zip(chosen_station_names, attack_results) %}
-                            <li>{{ station }}: {{ result }}</li>
-                        {% endfor %}
-                    </ul>
-
-                    <h4>Defense Allocations:</h4>
-                    <ul>
-                        {% for allocation in defense_allocations %}
-                            <li>{{ allocation }}</li>
-                        {% endfor %}
-                    </ul>
-
-                    <h4>Attack Probabilities:</h4>
-                    <ul>
-                        {% for probability in attack_probabilities %}
-                            <li>{{ probability }}</li>
-                        {% endfor %}
-                    </ul>
-
-                    <h4>Defender Success Probabilities:</h4>
-                    <ul>
-                        {% for probability in defender_success_probabilities %}
-                            <li>{{ probability }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No results to display. Submit the form to see results.</p>
-                {% endif %}
             </div>
         </div>
 

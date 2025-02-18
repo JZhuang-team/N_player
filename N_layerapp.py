@@ -111,29 +111,40 @@ def boston_transit_logic(C, A):
 
 @app.route('/bostonMap', methods=['GET', 'POST'])
 def boston_map():
-    if request.method == 'POST':
-        # Get form data
-        C_bar_init = float(request.form.get('C_bar_init'))  # Defender's budget
-        num_attacks = int(request.form.get('num_attacks'))  # Number of attacks
+     # Default values
+    resource_type = ""
+    C_bar_init = 0
+    num_attacks = 0
 
-        # Call the boston_transit_logic function with dynamic inputs
+    if request.method == 'POST':
+        # Retrieve submitted values
+        resource_type = request.form.get("resource_type", "")
+        C_bar_init = request.form.get("C_bar_init", 0)
+        num_attacks = request.form.get("num_attacks", 0)
+
+        # Ensure proper conversion
+        C_bar_init = float(C_bar_init) if C_bar_init else 0
+        num_attacks = int(num_attacks) if num_attacks else 0
+
+        # Call the risk assessment function
         results = boston_transit_logic(C=C_bar_init, A=num_attacks)
 
         # Render the bostonMap.html template with the results
         return render_template(
             'bostonMap.html',
+            resource_type=resource_type,
+            C_bar_init=C_bar_init,
+            num_attacks=num_attacks,
             chosen_station_names=results["chosen_station_names"],
             attack_results=results["attack_results"],
             defense_allocations=results["defense_allocations"],
             attack_probabilities=results["attack_probabilities"],
             defender_success_probabilities=results["defender_success_probabilities"],
-            budget=C_bar_init,
-            num_attacks=num_attacks,
-            zip=zip  # Pass the zip function to the template
+            zip=zip
         )
 
     # If it's a GET request, just render the bostonMap.html template
-    return render_template('bostonMap.html', zip=zip)  # Pass the zip function to the template
+    return render_template('bostonMap.html', zip=zip, num_attacks=num_attacks, C_bar_init=C_bar_init, resource_type=resource_type)  # Pass the zip function to the template
 
 
 # Initialization functions
