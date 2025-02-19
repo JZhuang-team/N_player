@@ -111,40 +111,62 @@ def boston_transit_logic(C, A):
 
 @app.route('/bostonMap', methods=['GET', 'POST'])
 def boston_map():
-     # Default values
     resource_type = ""
     C_bar_init = 0
     num_attacks = 0
 
     if request.method == 'POST':
-        # Retrieve submitted values
         resource_type = request.form.get("resource_type", "")
         C_bar_init = request.form.get("C_bar_init", 0)
         num_attacks = request.form.get("num_attacks", 0)
 
-        # Ensure proper conversion
         C_bar_init = float(C_bar_init) if C_bar_init else 0
         num_attacks = int(num_attacks) if num_attacks else 0
 
-        # Call the risk assessment function
         results = boston_transit_logic(C=C_bar_init, A=num_attacks)
 
-        # Render the bostonMap.html template with the results
+        # Create a mapping of station names to their index in the results
+        station_index_mapping = {name: i for i, name in enumerate(results["chosen_station_names"])}
+
+        station_data = []
+
+        for _, row in df.iterrows():
+            station_name = row["station_name"]
+
+            # If station exists in attack/defense results, get its data, otherwise default to 0%
+            if station_name in station_index_mapping:
+                idx = station_index_mapping[station_name]
+                attack_prob = f"{results['attack_probabilities'][idx] * 100:.2f}%"
+                defend_prob = f"{results['defender_success_probabilities'][idx] * 100:.2f}%"
+                defense_alloc = f"{results['defense_allocations'][idx]:.3f} K/$"
+            else:
+                attack_prob = "0.00%"
+                defend_prob = "100.00%"  # If not attacked, assume full defense success
+                defense_alloc = "0.000 K/$"
+
+            station_data.append({
+                "station_name": station_name,
+                "attack_probability": attack_prob,
+                "defend_probability": defend_prob,
+                "defense_allocation": defense_alloc
+            })
+
         return render_template(
             'bostonMap.html',
             resource_type=resource_type,
             C_bar_init=C_bar_init,
             num_attacks=num_attacks,
-            chosen_station_names=results["chosen_station_names"],
-            attack_results=results["attack_results"],
-            defense_allocations=results["defense_allocations"],
-            attack_probabilities=results["attack_probabilities"],
-            defender_success_probabilities=results["defender_success_probabilities"],
+            station_data=station_data,  # Pass ALL station data correctly mapped
             zip=zip
         )
 
-    # If it's a GET request, just render the bostonMap.html template
-    return render_template('bostonMap.html', zip=zip, num_attacks=num_attacks, C_bar_init=C_bar_init, resource_type=resource_type)  # Pass the zip function to the template
+    return render_template(
+        'bostonMap.html',
+        resource_type=resource_type,
+        C_bar_init=C_bar_init,
+        num_attacks=num_attacks,
+        station_data=[]
+    )
 
 
 # Initialization functions

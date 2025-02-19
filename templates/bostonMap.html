@@ -78,19 +78,17 @@
     </div>
 
     <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; // Replace with your Mapbox access token
-        
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; 
+    
         const map = new mapboxgl.Map({
-            container: 'map', 
-            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', //'mapbox://styles/mapbox/light-v11', 
+            container: 'map',
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
             center: [-71.05878548825, 42.366206886],
             zoom: 12
         });
     
         map.on('load', () => {
-    
-    
-            // Add Metro Lines
+            // **Add Metro Lines**
             map.addSource('metro-lines', {
                 type: 'vector',
                 url: 'mapbox://quicksid.8o0hrbga'
@@ -108,12 +106,12 @@
                 },
                 filter: [
                     'all',
-                    ['!=', ['get', 'color'], '#FFC72C'],  // Excluding lines with color '#FFC72C' (Yellow Bus Lines)
-                    ['!=', ['get', 'color'], '#008EAA']   // Excluding lines with color '#006595' (Boston Port Ferries)
+                    ['!=', ['get', 'color'], '#FFC72C'],
+                    ['!=', ['get', 'color'], '#008EAA']
                 ]
             });
     
-            // Add Metro Stations
+            // **Add Metro Stations**
             map.addSource('metro-stations', {
                 type: 'vector',
                 url: 'mapbox://quicksid.1fwvc521'
@@ -125,7 +123,7 @@
                 source: 'metro-stations',
                 'source-layer': 'metro_stations-9wh99v',
                 paint: {
-                    'circle-radius': 3,
+                    'circle-radius': 5,
                     'circle-color': '#FFFFFF',
                     'circle-stroke-width': 2,
                     'circle-stroke-color': '#000000',
@@ -138,15 +136,33 @@
                 closeOnClick: false
             });
     
+            // **Load station data from Flask**
+            const stationData = JSON.parse('{{ station_data|tojson|safe }}');
+    
             map.on('mousemove', 'metro-stations-layer', (e) => {
                 const features = e.features;
                 if (!features.length) return;
     
                 const feature = features[0];
-                const stationName = feature.properties.stop_name;  // Get station name
+                const stationName = feature.properties.stop_name;
+    
+                // Find the station in the dataset (always exists now)
+                const stationInfo = stationData.find(s => s.station_name === stationName);
+    
+                // Construct popup content for all stations
+                let popupContent = `<strong>${stationName}</strong>`;
+                if (stationInfo) {
+                    popupContent += `
+                        <br><strong>Attack Probability:</strong> ${stationInfo.attack_probability}
+                        <br><strong>Defend Probability:</strong> ${stationInfo.defend_probability}
+                        <br><strong>Defense Allocation:</strong> ${stationInfo.defense_allocation}
+                    `;
+                } else {
+                    popupContent += "<br>No Data Available";
+                }
     
                 popup.setLngLat(e.lngLat)
-                    .setHTML(`<strong>${stationName}</strong>`)
+                    .setHTML(popupContent)
                     .addTo(map);
             });
     
@@ -154,15 +170,40 @@
                 popup.remove();
             });
         });
-    
+
+        
         function syncSlider(id) {
-            document.getElementById(id + "_input").value = document.getElementById(id).value;
+            let slider = document.getElementById(id);
+            let numberInput = document.getElementById(id + "_input");
+            
+            numberInput.value = slider.value;  // Update number input when slider changes
         }
-    
+
         function syncInput(id) {
-            document.getElementById(id).value = document.getElementById(id + "_input").value;
+            let slider = document.getElementById(id);
+            let numberInput = document.getElementById(id + "_input");
+
+            slider.value = numberInput.value;  // Update slider when number input changes
         }
-    
+
+        // Ensure real-time updates between the slider and input
+        document.addEventListener("DOMContentLoaded", function () {
+            let sliders = document.querySelectorAll(".slider");
+            let numberInputs = document.querySelectorAll("input[type='number']");
+
+            sliders.forEach(slider => {
+                slider.addEventListener("input", function () {
+                    document.getElementById(slider.id + "_input").value = slider.value;
+                });
+            });
+
+            numberInputs.forEach(input => {
+                input.addEventListener("input", function () {
+                    document.getElementById(input.id.replace("_input", "")).value = input.value;
+                });
+            });
+        });
     </script>
+    
 </body>
 </html>
