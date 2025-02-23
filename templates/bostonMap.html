@@ -34,13 +34,18 @@
                     <div class="resource-type">
                         <label class="sidebarHeaders" for="resourceType">Time:</label>
                         <select class="form-control" id="resourceType" name="resource_type">
-                            <option value="" {% if resource_type == "" %}selected{% endif %}>Select a Time</option>
-                            <option value="morning" {% if resource_type == 'morning' %}selected{% endif %}>Morning</option>
-                            <option value="afternoon" {% if resource_type == 'afternoon' %}selected{% endif %}>Afternoon</option>
-                            <option value="night" {% if resource_type == 'night' %}selected{% endif %}>Night</option>
+                            <option value="VERY_EARLY_MORNING">Very Early Morning</option>
+                            <option value="EARLY_AM">Early AM</option>
+                            <option value="AM_PEAK">AM Peak</option>
+                            <option value="MIDDAY_BASE">Midday Base</option>
+                            <option value="MIDDAY_SCHOOL">Midday School</option>
+                            <option value="PM_PEAK">PM Peak</option>
+                            <option value="EVENING">Evening</option>
+                            <option value="LATE_EVENING">Late Evening</option>
+                            <option value="NIGHT">Night</option>
                         </select>
                     </div>
-
+                
                     <!-- Budget input -->
                     <div class="form-group">
                         <label for="C_bar_init" class="sidebarHeaders">Budget:</label>
@@ -51,7 +56,7 @@
                                 value="{{ C_bar_init }}" step="1" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
-
+                      
                     <!-- Number of Attacks input -->
                     <div class="form-group">
                         <label for="num_attacks" class="sidebarHeaders">Number of Attacks:</label>
@@ -62,9 +67,7 @@
                                 value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
                         </div>
                     </div>
-
-
-
+                
                     <!-- Submit button -->
                     <button type="submit" class="btn btn-primary submitButtons">Submit</button>
                 </form>
