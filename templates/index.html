@@ -13,6 +13,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+
+    <!-- Geocoder -->
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
 </head>
 <body>
 
@@ -64,12 +72,28 @@
                         </select>
                     </div>
 
+                    <div class="form-group">
+                        <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
+                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a building...">
+                        <div class="dropdown">
+                            <div class="dropdown-menu" id="locationDropdown" style="display: none; width: 100%; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+
                     <!-- Cost slider -->
                     <div class="form-group">
                         <label for="C_bar_init" class="sidebarHeaders">Resource (K/$):</label>
                         <div class="slider-container">
                           <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
                           <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="sidebarHeaders">Spawn Marker: </label>
+                        <div>
+                            <button type="button" class="btn btn-primary spawnMarker">Spawn</button>
+                            <button type="button" class="btn btn-primary clearMarker">Clear</button>
                         </div>
                     </div>
 
@@ -117,6 +141,7 @@
         <div class="map-area">
             <!-- Placeholder for actual map content -->
             <div id="map" class="map-canvas"></div>
+            <pre id="coordinates" class="coordinates"></pre>
         </div>
 
         <div class="right-sidebar">
@@ -142,6 +167,134 @@
         </div>
         
     </div>
+
+    <script>
+        // Marker
+        let currentMarkers = [];
+        const coordinatesElement = document.getElementById('coordinates');
+
+        // Spawn button
+        document.querySelector('.spawnMarker').addEventListener('click', function() {
+            // Create marker
+            const marker = new mapboxgl.Marker({
+                draggable: true
+            })
+            .setLngLat(map.getCenter())
+            .addTo(map);
+
+            // Store reference
+            currentMarkers.push(marker);
+
+            // Add drag and drop
+            marker.on('dragend', function() {
+                const lngLat = marker.getLngLat();
+                coordinatesElement.style.display = 'block';
+                coordinatesElement.innerHTML = `Longitude: ${lngLat.lng.toFixed(5)}<br />Latitude: ${lngLat.lat.toFixed(5)}`;
+            });
+
+            // Show coordinates
+            const initialLngLat = marker.getLngLat();
+            coordinatesElement.style.display = 'block';
+            coordinatesElement.innerHTML = `Longitude: ${initialLngLat.lng.toFixed(5)}<br />Latitude: ${initialLngLat.lat.toFixed(5)}`;
+        });
+
+        // Clear button
+        document.querySelector('.clearMarker').addEventListener('click', function() {
+            currentMarkers.forEach(marker => marker.remove());
+            currentMarkers = [];
+            coordinatesElement.style.display = 'none';
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let locations = [];
+        
+            // Fetch data 
+            fetch('/data/markers')
+                .then(response => response.json())
+                .then(data => {
+                    locations = data.results.map(location => ({
+                        id: location.locationid,
+                        title: location.title,
+                        coordinates: location.latlng // [lat, lng]
+                    }));
+                })
+                .catch(error => console.error('Error loading locations:', error));
+        
+            const searchInput = document.getElementById('locationSearch');
+            const dropdownMenu = document.getElementById('locationDropdown');
+        
+            // Update dropdown menu
+            function updateDropdown(searchTerm) {
+                dropdownMenu.innerHTML = ''; // Clear previous results
+                if (!searchTerm) {
+                    dropdownMenu.style.display = 'none';
+                    return;
+                }
+        
+                const filteredLocations = locations.filter(location =>
+                    location.title.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+        
+                if (filteredLocations.length === 0) {
+                    dropdownMenu.style.display = 'none';
+                    return;
+                }
+        
+                filteredLocations.forEach(location => {
+                    const option = document.createElement('div');
+                    option.classList.add('dropdown-item');
+                    option.textContent = location.title;
+                    option.dataset.id = location.id; // Store ID
+                    option.dataset.lat = location.coordinates[0]; // Store Latitude
+                    option.dataset.lng = location.coordinates[1]; // Store Longitude
+        
+                    option.addEventListener('click', function () {
+                        searchInput.value = location.title;  
+                        dropdownMenu.style.display = 'none';  
+                        
+                        // Log selected location's coordinates
+                        console.log(`Selected Location: ${location.title}`);
+                        console.log(`Coordinates: ${location.coordinates[0]}, ${location.coordinates[1]}`);
+                        
+                        // move
+                        flyToLocation(location.coordinates);
+                    });
+        
+                    dropdownMenu.appendChild(option);
+                });
+        
+                dropdownMenu.style.display = 'block';  
+            }
+        
+            // Fly + add marker
+            let currMarkers = [];
+            function flyToLocation(coordinates) {
+                currMarkers.forEach(marker => marker.remove());
+                currMarkers = [];
+
+                const [lat, lng] = coordinates; 
+                map.flyTo({ center: [lng, lat], zoom: 15 });  
+
+                const marker = new mapboxgl.Marker({color: "#FF0000"}).setLngLat([lng, lat]).addTo(map);
+
+                currMarkers.push(marker);
+            }
+        
+            // Input 
+            searchInput.addEventListener('input', function () {
+                updateDropdown(this.value);
+            });
+        
+            // Hide dropdown
+            document.addEventListener('click', function (event) {
+                if (!searchInput.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        });
+    </script>
 
     <!-- JavaScript for Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

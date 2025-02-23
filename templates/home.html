@@ -7,6 +7,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+    
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -23,6 +30,7 @@
                 <div class="page-header">
                     <h2></h2>
                 </div>
+
                 <form action="/results" method="post">
                     <div class="form-group">
                         <label for="total_layers" class="sidebarHeaders">Number of Layers:</label>
@@ -32,7 +40,8 @@
                         </div>
                         <input type="hidden" name="total_layers" id="total_layers" value="1">
                     </div>
-                    <div class="resource-type">
+
+                    <div class="form-group">
                         <label class="sidebarHeaders" for="resourceType">Resource Type:</label>
                         <select class="form-control" id="resourceType" name="resource_type">
                             <option value="">Select a resource</option>
@@ -40,13 +49,32 @@
                             <option value="camera">Camera</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
+                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a building...">
+                        <div class="dropdown">
+                            <div class="dropdown-menu" id="locationDropdown" style="display: none; width: 100%; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    
+
                     <div class="form-group">
                         <label for="C_bar_init" class="sidebarHeaders">Resource (K/$):</label>
                         <div class="slider-container">
-                          <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
-                          <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
+                            <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label class="sidebarHeaders">Spawn Marker: </label>
+                        <div>
+                            <button type="button" class="btn btn-primary spawnMarker">Spawn</button>
+                            <button type="button" class="btn btn-primary clearMarker">Clear</button>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="sidebarHeaders" for="attackTypes">Attack Types:</label>
                         <select class="form-control" id="attackTypes" name="attack_type[]">
@@ -58,8 +86,10 @@
                             <option value="Type5">Vehicular Assault</option>
                         </select>
                     </div>
+
                     <button type="submit" class="btn btn-primary submitButtons">Submit</button>
                 </form>
+
             </div>
             
             <!-- Heatmap Button -->
@@ -86,7 +116,9 @@
         </div>
         <div class="map-area">
             <div id="map" class="map-canvas"></div>
+            <pre id="coordinates" class="coordinates"></pre>
         </div>
+
         <div class="map-view-buttons">
             <div class="btn-group btn-group-horizontal" role="group" aria-label="Map Style Buttons">
                 <button type="button" class="btn btn-map" onclick="switchView('streets-v11')">Streets</button>
@@ -94,7 +126,138 @@
                 <button type="button" class="btn btn-map" id="toggle-dark-light" onclick="toggleDarkLight()">Light</button>
             </div>
         </div>
+
     </div>
+
+    <script>
+        // Marker
+        let currentMarkers = [];
+        const coordinatesElement = document.getElementById('coordinates');
+
+        // Spawn button
+        document.querySelector('.spawnMarker').addEventListener('click', function() {
+            // Create marker
+            const marker = new mapboxgl.Marker({
+                draggable: true
+            })
+            .setLngLat(map.getCenter())
+            .addTo(map);
+
+            // Store reference
+            currentMarkers.push(marker);
+
+            // Add drag and drop
+            marker.on('dragend', function() {
+                const lngLat = marker.getLngLat();
+                coordinatesElement.style.display = 'block';
+                coordinatesElement.innerHTML = `Longitude: ${lngLat.lng.toFixed(5)}<br />Latitude: ${lngLat.lat.toFixed(5)}`;
+            });
+
+            // Show coordinates
+            const initialLngLat = marker.getLngLat();
+            coordinatesElement.style.display = 'block';
+            coordinatesElement.innerHTML = `Longitude: ${initialLngLat.lng.toFixed(5)}<br />Latitude: ${initialLngLat.lat.toFixed(5)}`;
+        });
+
+        // Clear button
+        document.querySelector('.clearMarker').addEventListener('click', function() {
+            currentMarkers.forEach(marker => marker.remove());
+            currentMarkers = [];
+            coordinatesElement.style.display = 'none';
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let locations = [];
+        
+            // Fetch data 
+            fetch('/data/markers')
+                .then(response => response.json())
+                .then(data => {
+                    locations = data.results.map(location => ({
+                        id: location.locationid,
+                        title: location.title,
+                        coordinates: location.latlng // [lat, lng]
+                    }));
+                })
+                .catch(error => console.error('Error loading locations:', error));
+        
+            const searchInput = document.getElementById('locationSearch');
+            const dropdownMenu = document.getElementById('locationDropdown');
+        
+            // Update dropdown menu
+            function updateDropdown(searchTerm) {
+                dropdownMenu.innerHTML = ''; // Clear previous results
+                if (!searchTerm) {
+                    dropdownMenu.style.display = 'none';
+                    return;
+                }
+        
+                const filteredLocations = locations.filter(location =>
+                    location.title.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+        
+                if (filteredLocations.length === 0) {
+                    dropdownMenu.style.display = 'none';
+                    return;
+                }
+        
+                filteredLocations.forEach(location => {
+                    const option = document.createElement('div');
+                    option.classList.add('dropdown-item');
+                    option.textContent = location.title;
+                    option.dataset.id = location.id; // Store ID
+                    option.dataset.lat = location.coordinates[0]; // Store Latitude
+                    option.dataset.lng = location.coordinates[1]; // Store Longitude
+        
+                    option.addEventListener('click', function () {
+                        searchInput.value = location.title;  
+                        dropdownMenu.style.display = 'none';  
+                        
+                        // Log selected location's coordinates
+                        console.log(`Selected Location: ${location.title}`);
+                        console.log(`Coordinates: ${location.coordinates[0]}, ${location.coordinates[1]}`);
+                        
+                        // move
+                        flyToLocation(location.coordinates);
+                    });
+        
+                    dropdownMenu.appendChild(option);
+                });
+        
+                dropdownMenu.style.display = 'block';  
+            }
+        
+            // Fly + add marker
+            let currMarkers = [];
+            function flyToLocation(coordinates) {
+                currMarkers.forEach(marker => marker.remove());
+                currMarkers = [];
+
+                const [lat, lng] = coordinates; 
+                map.flyTo({ center: [lng, lat], zoom: 15 });  
+
+                const marker = new mapboxgl.Marker({color: "#FF0000"}).setLngLat([lng, lat]).addTo(map);
+
+                currMarkers.push(marker);
+            }
+        
+            // Input 
+            searchInput.addEventListener('input', function () {
+                updateDropdown(this.value);
+            });
+        
+            // Hide dropdown
+            document.addEventListener('click', function (event) {
+                if (!searchInput.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    
+
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>

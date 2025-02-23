@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response
+from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response, send_file, current_app, abort
 from scipy.optimize import minimize
 import numpy as np
 import pandas as pd
@@ -357,6 +357,14 @@ def student_density():
         return jsonify(json_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/data/markers')
+def get_markers():
+    file_path = 'data/markers.json'
+    return send_file(file_path)
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8080)
+
+
+
