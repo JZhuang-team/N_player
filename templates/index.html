@@ -233,7 +233,7 @@
             if (searchTerm) {
                 // Filter based on search
                 filteredLocations = locations.filter(location =>
-                    location.title.toLowerCase.includes(searchTerm.toLowerCase())
+                    location.title.toLowerCase().includes(searchTerm.toLowerCase())
                 );
             } else {
                 // Drop down menu 
