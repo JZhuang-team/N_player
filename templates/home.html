@@ -179,7 +179,8 @@
                         id: location.locationid,
                         title: location.title,
                         coordinates: location.latlng // [lat, lng]
-                    }));
+                    }))
+                    .sort((a, b) => a.title.localeCompare(b.title)); // Sort
                 })
                 .catch(error => console.error('Error loading locations:', error));
         
@@ -211,6 +212,7 @@
                     option.classList.add('dropdown-item');
                     option.textContent = location.title;
                     option.dataset.id = location.id; // Store ID
+                    option.dataset.campus = location.campus; // Store Campus
                     option.dataset.lat = location.coordinates[0]; // Store Latitude
                     option.dataset.lng = location.coordinates[1]; // Store Longitude
         
