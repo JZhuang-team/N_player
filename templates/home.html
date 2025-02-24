@@ -189,14 +189,17 @@
             // Update dropdown menu
             function updateDropdown(searchTerm) {
                 dropdownMenu.innerHTML = ''; // Clear previous results
-                if (!searchTerm) {
-                    dropdownMenu.style.display = 'none';
-                    return;
+                
+                let filteredLocations;
+                if (searchTerm) {
+                    // Filter based on search
+                    filteredLocations = locations.filter(location =>
+                        location.title.toLowerCase.includes(searchTerm.toLowerCase())
+                    );
+                } else {
+                    // Drop down menu 
+                    filteredLocations = locations;
                 }
-        
-                const filteredLocations = locations.filter(location =>
-                    location.title.toLowerCase().includes(searchTerm.toLowerCase())
-                );
         
                 if (filteredLocations.length === 0) {
                     dropdownMenu.style.display = 'none';
@@ -242,6 +245,11 @@
 
                 currMarkers.push(marker);
             }
+
+            // Focus 
+            searchInput.addEventListener('focus', function () {
+                updateDropdown(this.value);
+            });
         
             // Input 
             searchInput.addEventListener('input', function () {
