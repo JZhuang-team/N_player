@@ -6,16 +6,10 @@ import copy
 import logging
 import os
 app = Flask(__name__)
-app.logger.setLevel(logging.INFO)
-metrics_data = {}
 
 # Load the dataset
 file_path = "./data/attractiveness_dhs.csv"
 df = pd.read_csv(file_path)
-
-# Extract necessary data
-v = df["base_attractiveness_score_VERY_EARLY_MORNING"].tolist()  # Attractiveness scores
-n = len(v)  # Number of stations
 
 # Constants
 λ = 1  # Given constant
@@ -28,57 +22,71 @@ def defender_success_prob(d):
     return 1 - attack_success_prob(d)  # Defender's probability = 1 - Attacker's probability
 
 # Defender's optimization function (Minimization)
-def defender_objective(d):
+def defender_objective(d, a, v):
     P = attack_success_prob(d)
-    return sum(a[i] * P[i] * v[i] for i in range(n))  # Minimize risk
+    return sum(a[i] * P[i] * v[i] for i in range(len(v)))  # Minimize risk
 
 # Attacker's optimization function (Maximization)
-def attacker_objective(a, d):
+def attacker_objective(a, d, v):
     P = attack_success_prob(d)
-    return -sum(a[i] * P[i] * v[i] for i in range(n))  # Maximize attack success (negated for minimization solver)
+    return -sum(a[i] * P[i] * v[i] for i in range(len(v)))  # Maximize attack success (negated for minimization solver)
 
 # Constraint for the defender: total budget must sum to C
-def budget_constraint(d):
+def budget_constraint(d, C):
     return C - sum(d)
 
 # Constraint for the attacker: must select exactly A targets
-def attack_constraint(a):
+def attack_constraint(a, A):
     return A - sum(a)  # Allow multiple attacks
 
-# Function to perform the defender-attacker optimization
-def boston_transit_logic(C, A):
-    global a  # Attacker's decision variable
+def boston_transit_logic(C, A, time_period):
+    # Get the appropriate attractiveness score column based on the time period
+    score_column = f"base_attractiveness_score_{time_period}"
+    if score_column not in df.columns:
+        raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
+
+    v = df[score_column].tolist()  # Attractiveness scores
+    n = len(v)  # Number of stations
 
     # Initialize attacker's decision variable (binary-like continuous relaxation)
     a = np.ones(n) / n  # Equal probability for each station initially
 
-    # Initial guesses
-    d_init = [C / n] * n  # Defender initially distributes resources equally
-    a_init = [A / n] * n  # Attacker initially distributes attack probability equally
+    # Random initial guesses for defender's resources and attacker's probabilities
+    d_init = np.random.uniform(0, C, n)  # Random values between 0 and C
+    a_init = np.random.uniform(0, 1, n)  # Random values between 0 and 1
+
+    # Normalize a_init to sum to A
+    a_init = (a_init / np.sum(a_init)) * A
 
     # Bounds
-    d_bounds = [(0, None) for _ in range(n)]  # Defender's resources must be non-negative
+    d_bounds = [(0, C) for _ in range(n)]  # Defender's resources must be non-negative and <= C
     a_bounds = [(0, 1) for _ in range(n)]  # Attacker's choice is binary (but we use continuous relaxation)
 
     # Define constraints with C and A in scope
-    d_constraints = {'type': 'eq', 'fun': lambda d: C - sum(d)}  # Budget constraint
-    a_constraints = {'type': 'eq', 'fun': lambda a: A - sum(a)}  # Attack constraint
+    d_constraints = {'type': 'eq', 'fun': lambda d: budget_constraint(d, C)}  # Budget constraint
+    a_constraints = {'type': 'eq', 'fun': lambda a: attack_constraint(a, A)}  # Attack constraint
 
     # Iterate until convergence (equilibrium point)
     tolerance = 1e-4  # Convergence threshold
-    max_iterations = 10
+    max_iterations = 50  # Increased max iterations
 
     for iteration in range(max_iterations):
         # Solve for the defender's best response (Minimize risk)
-        d_result = minimize(defender_objective, d_init, method='SLSQP', bounds=d_bounds, constraints=d_constraints)
+        d_result = minimize(defender_objective, d_init, args=(a, v), method='SLSQP', bounds=d_bounds, constraints=d_constraints)
         d_optimal = d_result.x
 
         # Solve for the attacker's best response (Maximize attack success)
-        a_result = minimize(attacker_objective, a_init, args=(d_optimal,), method='SLSQP', bounds=a_bounds, constraints=a_constraints)
+        a_result = minimize(attacker_objective, a_init, args=(d_optimal, v), method='SLSQP', bounds=a_bounds, constraints=a_constraints)
         a_optimal = a_result.x
+
+        # Debugging: Print current values
+        print(f"\nIteration {iteration + 1}:")
+        print(f"Defender's allocations: {d_optimal}")
+        print(f"Attacker's probabilities: {a_optimal}")
 
         # Check for convergence
         if np.linalg.norm(np.array(d_optimal) - np.array(d_init)) < tolerance and np.linalg.norm(np.array(a_optimal) - np.array(a_init)) < tolerance:
+            print("Convergence reached.")
             break  # Equilibrium reached
 
         # Update initial guesses
@@ -92,80 +100,64 @@ def boston_transit_logic(C, A):
     chosen_stations = np.argsort(a_optimal)[-A:]  # Select the top A attacks
     chosen_station_names = df.loc[chosen_stations, "station_name"].tolist()
 
-    # Determine attack success or failure
-    attack_results = []
-    for i in chosen_stations:
-        if a_optimal[i] > P_defender[i]:  # If attack probability is higher than defender's probability, attack succeeds
-            attack_results.append("❌ Attack Successful")
+    # Prepare station data for the frontend
+    station_data = []
+    for _, row in df.iterrows():
+        station_name = row["station_name"]
+        if station_name in chosen_station_names:
+            idx = chosen_station_names.index(station_name)
+            attack_prob = f"{a_optimal[chosen_stations[idx]] * 100:.2f}%"
+            defend_prob = f"{P_defender[chosen_stations[idx]] * 100:.2f}%"
+            defense_alloc = f"{d_optimal[chosen_stations[idx]]:.3f} K/$"
         else:
-            attack_results.append("✅ Attack Blocked")
+            attack_prob = "0.00%"
+            defend_prob = "100.00%"  # If not attacked, assume full defense success
+            defense_alloc = "0.000 K/$"
 
-    # Return the results
-    return {
-        "chosen_station_names": chosen_station_names,
-        "attack_results": attack_results,
-        "defense_allocations": d_optimal.tolist(),
-        "attack_probabilities": a_optimal.tolist(),
-        "defender_success_probabilities": P_defender.tolist(),
-    }
+        station_data.append({
+            "station_name": station_name,
+            "attack_probability": attack_prob,
+            "defend_probability": defend_prob,
+            "defense_allocation": defense_alloc
+        })
+
+    # Print the attacked stations and their data to the terminal
+    print("\nAttacked Stations and Their Data:")
+    print("=" * 50)
+    for station in chosen_station_names:
+        idx = chosen_station_names.index(station)
+        print(f"Station Name: {station}")
+        print(f"  - Defense Allocation: {d_optimal[chosen_stations[idx]]:.3f} K/$")
+        print(f"  - Attack Probability: {a_optimal[chosen_stations[idx]] * 100:.2f}%")
+        print(f"  - Defender Success Probability: {P_defender[chosen_stations[idx]] * 100:.2f}%")
+        print("-" * 50)
+
+    return station_data
 
 @app.route('/bostonMap', methods=['GET', 'POST'])
 def boston_map():
-    resource_type = ""
+    # Initialize default values
+    time_period = ""
     C_bar_init = 0
     num_attacks = 0
+    station_data = []  # Initialize station_data as an empty list
 
     if request.method == 'POST':
-        resource_type = request.form.get("resource_type", "")
-        C_bar_init = request.form.get("C_bar_init", 0)
-        num_attacks = request.form.get("num_attacks", 0)
+        # Get form data
+        time_period = request.form.get("resource_type", "")
+        C_bar_init = float(request.form.get("C_bar_init", 0))
+        num_attacks = int(request.form.get("num_attacks", 0))
 
-        C_bar_init = float(C_bar_init) if C_bar_init else 0
-        num_attacks = int(num_attacks) if num_attacks else 0
+        # Run the logic and get station data
+        station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
 
-        results = boston_transit_logic(C=C_bar_init, A=num_attacks)
-
-        # Create a mapping of station names to their index in the results
-        station_index_mapping = {name: i for i, name in enumerate(results["chosen_station_names"])}
-
-        station_data = []
-
-        for _, row in df.iterrows():
-            station_name = row["station_name"]
-
-            # If station exists in attack/defense results, get its data, otherwise default to 0%
-            if station_name in station_index_mapping:
-                idx = station_index_mapping[station_name]
-                attack_prob = f"{results['attack_probabilities'][idx] * 100:.2f}%"
-                defend_prob = f"{results['defender_success_probabilities'][idx] * 100:.2f}%"
-                defense_alloc = f"{results['defense_allocations'][idx]:.3f} K/$"
-            else:
-                attack_prob = "0.00%"
-                defend_prob = "100.00%"  # If not attacked, assume full defense success
-                defense_alloc = "0.000 K/$"
-
-            station_data.append({
-                "station_name": station_name,
-                "attack_probability": attack_prob,
-                "defend_probability": defend_prob,
-                "defense_allocation": defense_alloc
-            })
-
-        return render_template(
-            'bostonMap.html',
-            resource_type=resource_type,
-            C_bar_init=C_bar_init,
-            num_attacks=num_attacks,
-            station_data=station_data,  # Pass ALL station data correctly mapped
-            zip=zip
-        )
-
+    # Render the template with the data
     return render_template(
         'bostonMap.html',
-        resource_type=resource_type,
+        resource_type=time_period,
         C_bar_init=C_bar_init,
         num_attacks=num_attacks,
-        station_data=[]
+        station_data=station_data  # Always pass station_data, even if empty
     )
 
 
