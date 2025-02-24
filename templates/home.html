@@ -352,7 +352,7 @@
             .then(response => response.json())
             .then(data => {
                     studentDensityData = data;
-                    console.log("Fetched Data:", studentDensityData);
+                    //console.log("Fetched Data:", studentDensityData);
                     processCSVData(studentDensityData);
                 })
             .catch(error => console.error('Error fetching CSV data:', error));
@@ -376,64 +376,64 @@
                 geoJSONData[Weekday][Time][Building] = Student_Count_Building;
             });
 
-            //console.log("Processed Student Density Data:", geoJSONData);
-
             studentDensityData = geoJSONData;
+            //console.log('Processed CSV Data (GeoJSON): ', studentDensityData);
         }
-
-
-        const locationCoordinates = {
-            "Academ": [-78.784393, 43.009101], "Alfier": [-78.787108, 42.999924], "Alumni": [-78.781268, 43.000370],
-            "Baird": [-78.784439, 43.000057], "Baldy": [-78.786982, 43.000493], "Bell": [-78.787036, 43.001517],
-            "Bonner": [-78.788146, 43.001535], "Capen": [-78.789566, 43.000899], "CFA": [-78.782852, 43.000953],
-            "Clemen": [-78.785007, 43.000421], "Cooke": [-78.791437, 42.999958], "Davis": [-78.787253, 43.002752],
-            "Frnczk": [-78.791203, 43.001235], "Furnas": [-78.787096, 43.001927], "Grein": [-78.785320, 43.006544],
-            "Hoch": [-78.790764, 42.999941], "Jacobs": [-78.786973, 42.999546], "Jarvis": [-78.787084, 43.002328],
-            "Ketter": [-78.788202, 43.002563], "Knox": [-78.787744, 43.001018], "Math": [-78.792770, 43.001205],
-            "Norton": [-78.788556, 43.001074], "Nsc": [-78.791720, 43.000707], "Obrian": [-78.788007, 43.000376],
-            "Park": [-78.787941, 42.999755], "Slee": [-78.783992, 43.000371], "Spaulding": [-78.784249, 43.009584],
-            "Talbert": [-78.790412, 43.000681], "Wilkeson": [-78.784019, 43.008842]
-        };
 
         function addHeatmapLayer() {
 
             let timeKey = currentTime;
             let weekdayKey = currentWeekday;
 
-            //console.log("Time Key: ", timeKey);  // Log to check
-            //console.log("Weekday Key: ", weekdayKey);  // Log to check
+            //console.log("Time Key: ", timeKey);
+            //console.log("Weekday Key: ", weekdayKey);
 
             let rawData = studentDensityData[weekdayKey] && studentDensityData[weekdayKey][timeKey] ? studentDensityData[weekdayKey][timeKey] : {};
             
             //console.log("Features to be added to heatmap:", rawData);
 
-            let features = Object.keys(rawData).map(Building => {
-                if (locationCoordinates[Building]) {
-                    let [lon, lat] = locationCoordinates[Building];
-                    let count = rawData[Building];
+            if (!map.getSource('buildings-heatmap')) {
+                map.addSource('buildings-heatmap', {
+                    'type': 'vector',
+                    'url': 'mapbox://quicksid.cm77rz6ea18ut1no0bvytqdiz-4e2lh'
+                });
 
-                    let sizeFactor = Math.min(0.00003 + count * 0.000005, 0.0004); // Smaller size
+                map.addLayer({
+                id: "buildings-layer",
+                type: "fill",
+                source: "buildings-heatmap",
+                "source-layer": "ub_heatmap",
+                paint: {
+                    "fill-color": "grey",
+                    "fill-opacity": 0.4
+                    }
+                });
+            }
 
-                    let rectCoordinates = [
-                        [lon - sizeFactor, lat - sizeFactor * 0.6], // Bottom-left
-                        [lon + sizeFactor, lat - sizeFactor * 0.6], // Bottom-right
-                        [lon + sizeFactor, lat + sizeFactor * 0.6], // Top-right
-                        [lon - sizeFactor, lat + sizeFactor * 0.6], // Top-left
-                        [lon - sizeFactor, lat - sizeFactor * 0.6]  // Closing point
-                    ];
+            let buildingFeatures = map.querySourceFeatures('buildings-heatmap', {
+                sourceLayer: 'ub_heatmap',
+            });
+            
 
-                    return {
-                        type: "Feature",
-                        geometry: {
-                            type: "Polygon",
-                            coordinates: [rectCoordinates]
-                        },
-                        properties: {
-                            count: count
-                        }
-                    };
+            let features = buildingFeatures.map(feature => {
+                let coordinates = feature.geometry.coordinates;
+                let count = rawData[feature.properties.id] || 0
+
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: coordinates
+                    },
+                    properties: {
+                        count: count,
+                        building_name: feature.properties.building
+                    }
                 }
-                return null; // Ignore buildings without coordinates
+
+                //console.log("geometry type:", buildingFeatures[0].geometry.type);
+                //console.log("geometry coordinates:", buildingFeatures[0].geometry.coordinates[0]);
+
             }).filter(feature => feature !== null); // Remove null entries
 
             if (!map.getSource('heatmap')) {
@@ -445,23 +445,80 @@
                     }
                 });
 
+                //console.log(map.getSource('heatmap'));
+
                 map.addLayer({
-                    id: 'heatmap-layer',
+                    id: 'heatmap-radial',
+                    type: 'heatmap',
+                    source: 'heatmap',
+                    minzoom: 0,
+                    maxzoom: 16,
+                    paint: {
+                        "heatmap-weight": [
+                            "interpolate",
+                            ["linear"],
+                            ["get", "count"],
+                            0, 0,
+                            10, 1
+                        ],
+                        "heatmap-intensity": 1,
+                        "heatmap-color": [
+                            "interpolate",
+                            ["linear"],
+                            ["heatmap-density"],
+                            0, "rgba(255,255,255,0)",
+                            0.2, "blue",
+                            0.4, "cyan",
+                            0.6, "lime",
+                            0.8, "yellow",
+                            1, "red"
+                        ],
+                        "heatmap-radius": [
+                            "interpolate",
+                            ["linear"],
+                            ["zoom"],
+                            0, 5,
+                            15, 25
+                        ],
+                        "heatmap-opacity": 0.7
+                    }
+                });
+
+                map.addLayer({
+                    id: 'heatmap-buildings',
                     type: 'fill',
                     source: 'heatmap',
+                    minzoom: 16,
+                    maxzoom: 22,
                     paint: {
                         'fill-color': [
                             "interpolate",
                             ["linear"],
                             ["get", "count"],
-                            0, "rgba(0, 0, 255, 0.3)",
-                            50, "green",
-                            100, "yellow",
-                            200, "orange",
-                            400, "red",
-                            800, "darkred"
+                            0, "#FFFEDB",
+                            50, "#FFFB5D",
+                            100, "#FEE102",
+                            200, "#FDAC02",
+                            400, "#FB6702",
+                            800, "#FB2500"
                         ],
-                        'fill-opacity': 0.7
+                    'fill-opacity': [
+                        "case",
+                        ["==", ["get", "count"], 0], 0,
+                        0.7
+                        ]
+                    }
+                });
+
+                map.on('zoom', () => {
+                    let zoomLevel = map.getZoom();
+                    
+                    if (zoomLevel >= 16) {
+                        map.setPaintProperty('buildings-layer', 'fill-opacity', [
+                            "case",
+                            ["==", ["get", "count"], 0], 0, // Hide only buildings with count = 0
+                            0
+                        ]);
                     }
                 });
 
@@ -470,21 +527,28 @@
                     closeOnClick: false
                 });
 
-                map.on('mousemove', 'heatmap-layer', (e) => {
-                const density = e.features[0].properties.count;
-                const coordinates = e.lngLat;
-
-                popup.setLngLat(coordinates)
-                    .setHTML(`<b>Student Count:</b> ${density}`)
-                    .addTo(map);
-                });
-
-                map.on('mouseleave', 'heatmap-layer', () => {
-                    popup.remove();
-                });
+                function addPopupEvent(layerName) {
+                    map.on('mousemove', layerName, (e) => {
+                        const properties = e.features[0].properties;
+                        const density = properties.count || 0;
+                        const buildingName = properties.building_name || "Unknown Building";
+                        const coordinates = e.lngLat;
+                        
+                        popup.setLngLat(coordinates)
+                        .setHTML(`<b>${buildingName}</b><br><b>Student Count:</b> ${density}`)
+                        .addTo(map);
+                    });
+                    
+                    map.on('mouseleave', layerName, () => {
+                        popup.remove();
+                    });
+                }
+                
+                addPopupEvent('heatmap-radial');
+                addPopupEvent('heatmap-buildings');
 
             } else {
-                console.log("Updating existing heatmap...")
+                //console.log("Updating existing heatmap...")
                 map.getSource('heatmap').setData({
                     type: "FeatureCollection",
                     features: features
@@ -493,11 +557,14 @@
         }
 
         function removeHeatmapLayer() {
-            if (map.getLayer('heatmap-layer')) {
-                map.removeLayer('heatmap-layer');
-            }
             if (map.getSource('heatmap')) {
                 map.removeSource('heatmap');
+            }
+            if (map.getLayer('heatmap-radial')) {
+                map.removeLayer('heatmap-radial');
+            }
+            if (map.getLayer('heatmap-buildings')) {
+                map.removeLayer('heatmap-buildings');
             }
         }
 
@@ -529,7 +596,6 @@
             currentWeekday = weekday;
             //console.log("Selected Weekday: ", currentWeekday);
 
-            // If the heatmap is visible, update the heatmap to reflect the changes
             if (heatmapVisible) {
                 addHeatmapLayer();
             }

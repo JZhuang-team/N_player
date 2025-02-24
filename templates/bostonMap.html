@@ -94,37 +94,32 @@
             // **Add Metro Lines**
             map.addSource('metro-lines', {
                 type: 'vector',
-                url: 'mapbox://quicksid.8o0hrbga'
+                url: 'mapbox://quicksid.0th645in'
             });
     
             map.addLayer({
                 id: 'metro-lines-layer',
                 type: 'line',
                 source: 'metro-lines',
-                'source-layer': 'metro_lines-2tdkpe',
+                'source-layer': 'metro_lines-6c89vh',
                 paint: {
                     'line-color': ['get', 'color'],
                     'line-width': 5,
                     'line-opacity': 0.9
-                },
-                filter: [
-                    'all',
-                    ['!=', ['get', 'color'], '#FFC72C'],
-                    ['!=', ['get', 'color'], '#008EAA']
-                ]
+                }
             });
     
             // **Add Metro Stations**
             map.addSource('metro-stations', {
                 type: 'vector',
-                url: 'mapbox://quicksid.1fwvc521'
+                url: 'mapbox://quicksid.15kqqikj'
             });
     
             map.addLayer({
                 id: 'metro-stations-layer',
                 type: 'circle',
                 source: 'metro-stations',
-                'source-layer': 'metro_stations-9wh99v',
+                'source-layer': 'metro_stations-6hjjow',
                 paint: {
                     'circle-radius': 5,
                     'circle-color': '#FFFFFF',
