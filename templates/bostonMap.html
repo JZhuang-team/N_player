@@ -27,7 +27,7 @@
                 <div class="page-header">
                     <h2>Boston Transit Case</h2>
                 </div>
-            <form>
+                <form>
                 <!-- Model selection form -->
                 <form action="/bostonMap" method="post">
                     <!-- Time selection -->
@@ -67,6 +67,9 @@
                                 value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
                         </div>
                     </div>
+                
+                    <!-- Submit button -->
+                    <button type="submit" class="btn btn-primary submitButtons">Submit</button>
                 </form>
             </div>
         </div>
@@ -288,87 +291,90 @@ Copy
                 }
             });
 
-            const stationData = JSON.parse('{{ station_data|tojson|safe }}');
-            const attackedStations = stationData
-                .filter(station => station.is_attacked)
-                .map(station => station.station_name);
+            let stationData = []; //Initialize
 
-            map.addLayer({
-                id: 'attacked-stations-layer',
-                type: 'circle',
-                source: 'metro-stations',
-                'source-layer': 'metro_stations-6hjjow',
-                filter: ['in', 'stop_name', ...attackedStations],
-                paint: {
-                    'circle-radius': 7,
-                    'circle-color': '#FF0000',
-                    'circle-stroke-width': 2,
-                    'circle-stroke-color': '#000000',
-                    'circle-opacity': 0.9
+            // Fetch data
+            const debounce = (func, delay = 300) => {
+                let timer;
+                return (...args) => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => func.apply(this, args), delay);
+                };
+            };
+
+            // Fetch data and update UI
+            const fetchStationData = debounce(() => {
+                const timePeriod = document.getElementById('resourceType').value;
+                const budget = document.getElementById('C_bar_init').value;
+                const numAttacks = document.getElementById('num_attacks').value;
+
+                fetch(`/get_station_data?resource_type=${encodeURIComponent(timePeriod)}&C_bar_init=${budget}&num_attacks=${numAttacks}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        stationData = data;
+                        updateMapAndTable(data);
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+
+
+            const updateMapAndTable = (data) => {
+                // Remove existing attacked layer
+                if (map.getLayer('attacked-stations-layer')) {
+                    map.removeLayer('attacked-stations-layer');
                 }
-            });
 
-            populateStationTable(stationData, attackedStations);
+                // Add new attacked layer
+                const attackedStations = data.filter(station => station.is_attacked).map(station => station.station_name);
+                if (attackedStations.length > 0) {
+                    map.addLayer({
+                        id: 'attacked-stations-layer',
+                        type: 'circle',
+                        source: 'metro-stations',
+                        'source-layer': 'metro_stations-6hjjow',
+                        filter: ['in', 'stop_name', ...attackedStations],
+                        paint: {
+                            'circle-radius': 7,
+                            'circle-color': '#FF0000',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#000000',
+                            'circle-opacity': 0.9
+                        }
+                    });
+                }
 
-            const popup = new mapboxgl.Popup({
-                closeButton: false,
-                closeOnClick: false
-            });
-    
-            // **Load station data from Flask**
-            const stationData = JSON.parse('{{ station_data|tojson|safe }}');
-    
+                // Update table
+                populateStationTable(data, attackedStations);
+            };
+
+            // Inputs
+            document.getElementById('resourceType').addEventListener('change', fetchStationData);
+            document.getElementById('C_bar_init').addEventListener('input', fetchStationData);
+            document.getElementById('num_attacks').addEventListener('input', fetchStationData);
+            document.querySelector('form').addEventListener('submit', (e) => e.preventDefault());
+
+            fetchStationData();
+
+            const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
             map.on('mousemove', 'metro-stations-layer', (e) => {
-                const features = e.features;
-                if (!features.length) return;
-
-                const feature = features[0];
-                const stationName = feature.properties.stop_name;
-                const stationInfo = stationData.find(s => s.station_name === stationName);
-    
-                // Construct popup content for all stations
-                let popupContent = `<strong>${stationName}</strong>`;
-                if (stationInfo) {
-                    popupContent += `
-                        <br><strong>Attack Probability:</strong> ${stationInfo.attack_probability}
-                        <br><strong>Defend Probability:</strong> ${stationInfo.defend_probability}
-                        <br><strong>Defense Allocation:</strong> ${stationInfo.defense_allocation}
-                    `;
-                } else {
-                    popupContent += "<br>No Data Available";
+                const stationName = e.features[0].properties.stop_name;
+                const station = stationData.find(s => s.station_name === stationName);
+                if (station) {
+                    popup.setLngLat(e.lngLat)
+                        .setHTML(`<strong>${stationName}</strong>
+                            <br>Attack Probability: ${station.attack_probability}
+                            <br>Defense Allocation: ${station.defense_allocation}`)
+                        .addTo(map);
                 }
-
-                popup.setLngLat(e.lngLat)
-                    .setHTML(popupContent)
-                    .addTo(map);
             });
-    
-            map.on('mouseleave', 'metro-stations-layer', () => {
-                popup.remove();
-            });
+            map.on('mouseleave', 'metro-stations-layer', () => popup.remove());
+        
+        });   
 
-            if (stationData.length > 0) {
-                const attackedStations = stationData
-                    .filter(station => station.is_attacked)
-                    .map(station => station.station_name);
-
-                map.addLayer({
-                    id: 'attacked-stations-layer',
-                    type: 'circle',
-                    // ... layer config ...
-                });
-                
-                const attackedStationData = stationData.filter(station => station.is_attacked);
-                populateStationTable(attackedStationData, attackedStations);
-            }
-        });
-
-        function populateStationTable(stationData, attackedStations) {
+        function populateStationTable(data, attackedStations) {
             const tableBody = document.getElementById('station-table-body');
-            if (!tableBody) return;
             tableBody.innerHTML = '';
-
-            stationData.forEach(station => {
+            data.forEach(station => {
                 const row = document.createElement('tr');
                 if (attackedStations.includes(station.station_name)) {
                     row.classList.add('attacked');
