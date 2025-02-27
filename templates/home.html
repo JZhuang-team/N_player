@@ -91,32 +91,47 @@
                 </form>
 
             </div>
-            
-            <!-- Heatmap Button -->
-            <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
 
-            <!-- Heatmap Weekday Dropdown -->
-            <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
-                <label for="weekday-dropdown"><b>Weekday:</b></label>
-                <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                </select>
-            </div>
+            <div id="heatmap-controls">
+                <!-- Heatmap Button -->
+                <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
 
-            <!-- Heatmap Time Slider -->
-            <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
-                <label for="time-slider"><b>Time:</b></label>
-                <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
-                <span id="time-display">8:00</span>
+                <!-- Heatmap Weekday Dropdown -->
+                <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                    <label for="weekday-dropdown"><b>Weekday:</b></label>
+                    <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                    </select>
+                </div>
+
+                <!-- Heatmap Time Slider -->
+                <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                    <label for="time-slider"><b>Time:</b></label>
+                    <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
+                    <span id="time-display">8:00</span>
+                </div>
             </div>
         </div>
+
         <div class="map-area">
             <div id="map" class="map-canvas"></div>
             <pre id="coordinates" class="coordinates"></pre>
+        </div>
+
+        <div id="heatmap-legend" class="legend" style="display: none">
+            <h6>Student Population:</h6>
+            <div><span style="background-color: #C7445D"></span>1000+</div>
+            <div><span style="background-color: #E07069"></span>801-1000</div>
+            <div><span style="background-color: #FF972D"></span>501-800</div>
+            <div><span style="background-color: #F0D55E"></span>301-500</div>
+            <div><span style="background-color: #509BC7"></span>101-300</div>
+            <div><span style="background-color: #4E6DBD"></span>51-100</div>
+            <div><span style="background-color: #203A7C"></span>1-50</div>
+            <div><span style="background-color: #FFFFFF"></span>0</div>
         </div>
 
         <div class="map-view-buttons">
@@ -505,18 +520,38 @@
                             "interpolate",
                             ["linear"],
                             ["get", "count"],
-                            0, "#FFFEDB",
-                            50, "#FFFB5D",
-                            100, "#FEE102",
-                            200, "#FDAC02",
-                            400, "#FB6702",
-                            800, "#FB2500"
+                            0, "#FFFFFF",
+                            1, "#203A7C",
+                            50, "#4E6DBD",
+                            100, "#509BC7",
+                            300, "#F0D55E",
+                            500, "#FF972D",
+                            800, "#E07069",
+                            1000, "#C7445D"
                         ],
                     'fill-opacity': [
                         "case",
                         ["==", ["get", "count"], 0], 0,
-                        0.7
+                        1
                         ]
+                    }
+                });
+
+                map.addLayer({
+                    id: "heatmap-buildings-labels",
+                    type: "symbol",
+                    source: "heatmap",
+                    minzoom: 16,
+                    layout: {
+                        "text-field": ["get", "building_name"],
+                        "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+                        "text-size": 10,
+                        "text-anchor": "center"
+                    },
+                    paint: {
+                        "text-color": "#000000",
+                        "text-halo-color": "#FFFFFF",
+                        "text-halo-width": 0.5
                     }
                 });
 
@@ -576,6 +611,9 @@
             if (map.getLayer('heatmap-buildings')) {
                 map.removeLayer('heatmap-buildings');
             }
+            if (map.getLayer('heatmap-buildings-labels')) {
+                map.removeLayer('heatmap-buildings-labels');
+            }
         }
 
         let heatmapVisible = false;
@@ -586,16 +624,19 @@
             const dropdownContainer = document.getElementById('weekday-dropdown-container');
             const sliderContainer = document.getElementById("time-slider-container")
             const button = document.getElementById("toggle-heatmap-btn")
+            const heatmapLegend = document.getElementById('heatmap-legend');
 
             if (heatmapVisible) {
                 dropdownContainer.style.display = "block";
                 sliderContainer.style.display = "block";
+                heatmapLegend.style.display = 'block';
                 button.innerText = "Hide Heatmap";
                 button.classList.add("active");
                 addHeatmapLayer();
             } else {
                 dropdownContainer.style.display = "none";
                 sliderContainer.style.display = "none";
+                heatmapLegend.style.display = 'none';
                 button.innerText = "Show Heatmap";
                 button.classList.remove("active");
                 removeHeatmapLayer();

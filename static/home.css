@@ -125,7 +125,7 @@ body {
 /* New division for map view buttons */
 .map-view-buttons {
     position: absolute;
-    bottom: 20px;
+    bottom: 10px;
     right: 20px;
     width: 300px;
     z-index: 1000;
@@ -224,4 +224,32 @@ body {
     border-radius: 3px;
     display: none;
     z-index: 1000;
+}
+
+.legend {
+    background-color: #fff;
+    border-radius: 3px;
+    bottom: 75px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font:
+        14px/16px 'Helvetica Neue',
+        Arial,
+        Helvetica,
+        sans-serif;
+    padding: 10px;
+    position: absolute;
+    right: 10px;
+    z-index: 1;
+}
+
+.legend h4 {
+    margin: 0 0 10px;
+}
+
+.legend div span {
+    border-radius: 20%;
+    display: inline-block;
+    height: 10px;
+    margin-right: 5px;
+    width: 10px;
 }
