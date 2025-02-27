@@ -227,12 +227,14 @@
             let slider = document.getElementById(id);
             let numberInput = document.getElementById(id + "_input");
             numberInput.value = slider.value;
+            slider.dispatchEvent(new Event('input'));
         }
 
         function syncInput(id) {
             let slider = document.getElementById(id);
             let numberInput = document.getElementById(id + "_input");
             slider.value = numberInput.value;
+            slider.dispatchEvent(new Event('input'));
         }
 
         document.addEventListener("DOMContentLoaded", function () {
