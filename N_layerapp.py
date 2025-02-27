@@ -48,88 +48,64 @@ def boston_transit_logic(C, A, time_period):
     v = df[score_column].tolist()  # Attractiveness scores
     n = len(v)  # Number of stations
 
-    # Initialize attacker's decision variable (binary-like continuous relaxation)
-    a = np.ones(n) / n  # Equal probability for each station initially
+    # Initialize variables (matching notebook)
+    d_init = np.random.uniform(0, C / n, n)  # Initial defense spread
+    a_init = np.random.uniform(0, 1, n)      # Initial attack probabilities
 
-    # Random initial guesses for defender's resources and attacker's probabilities
-    d_init = np.random.uniform(0, C, n)  # Random values between 0 and C
-    a_init = np.random.uniform(0, 1, n)  # Random values between 0 and 1
+    # Bounds (matching notebook)
+    d_bounds = [(0, C / 5) for _ in range(n)]  # Defender: 0 to C/5 per station
+    a_bounds = [(0, 1) for _ in range(n)]      # Attacker: 0 to 1 per station
 
-    # Normalize a_init to sum to A
-    a_init = (a_init / np.sum(a_init)) * A
+    # Constraints (matching notebook)
+    d_constraints = {'type': 'eq', 'fun': lambda d: C - np.sum(d)}  # Budget constraint
+    a_constraints = {'type': 'eq', 'fun': lambda a: A - np.sum(a)}  # Attack constraint
 
-    # Bounds
-    d_bounds = [(0, C) for _ in range(n)]  # Defender's resources must be non-negative and <= C
-    a_bounds = [(0, 1) for _ in range(n)]  # Attacker's choice is binary (but we use continuous relaxation)
+    # Defender optimization (matching notebook)
+    d_result = minimize(defender_objective, d_init, args=(a_init, v), method='SLSQP', 
+                        bounds=d_bounds, constraints=d_constraints)
+    d_optimal = d_result.x
 
-    # Define constraints with C and A in scope
-    d_constraints = {'type': 'eq', 'fun': lambda d: budget_constraint(d, C)}  # Budget constraint
-    a_constraints = {'type': 'eq', 'fun': lambda a: attack_constraint(a, A)}  # Attack constraint
+    # Attacker optimization (matching notebook)
+    a_result = minimize(attacker_objective, a_init, args=(d_optimal, v), method='SLSQP', 
+                        bounds=a_bounds, constraints=a_constraints)
+    a_optimal = a_result.x
 
-    # Iterate until convergence (equilibrium point)
-    tolerance = 1e-4  # Convergence threshold
-    max_iterations = 50  # Increased max iterations
-
-    for iteration in range(max_iterations):
-        # Solve for the defender's best response (Minimize risk)
-        d_result = minimize(defender_objective, d_init, args=(a, v), method='SLSQP', bounds=d_bounds, constraints=d_constraints)
-        d_optimal = d_result.x
-
-        # Solve for the attacker's best response (Maximize attack success)
-        a_result = minimize(attacker_objective, a_init, args=(d_optimal, v), method='SLSQP', bounds=a_bounds, constraints=a_constraints)
-        a_optimal = a_result.x
-
-        # Debugging: Print current values
-        print(f"\nIteration {iteration + 1}:")
-        print(f"Defender's allocations: {d_optimal}")
-        print(f"Attacker's probabilities: {a_optimal}")
-
-        # Check for convergence
-        if np.linalg.norm(np.array(d_optimal) - np.array(d_init)) < tolerance and np.linalg.norm(np.array(a_optimal) - np.array(a_init)) < tolerance:
-            print("Convergence reached.")
-            break  # Equilibrium reached
-
-        # Update initial guesses
-        d_init = d_optimal
-        a_init = a_optimal
-
-    # Compute defender's success probability
+    # Compute defender success probability (matching notebook)
     P_defender = defender_success_prob(d_optimal)
 
-    # Extract the top A attack targets
-    chosen_stations = np.argsort(a_optimal)[-A:]  # Select the top A attacks
+    # Identify top A attacked stations (matching notebook)
+    chosen_stations = np.argsort(a_optimal)[-A:]  # Top A by attack probability
     chosen_station_names = df.loc[chosen_stations, "station_name"].tolist()
 
-    # Prepare station data for the frontend
+    # Prepare station data for ALL stations (matching Flask frontend expectation)
+    # In boston_transit_logic, update station_data creation:
     station_data = []
-    for _, row in df.iterrows():
+    chosen_station_names_set = set(chosen_station_names)  # Convert to set for O(1) lookup
+    for i, row in df.iterrows():
         station_name = row["station_name"]
-        if station_name in chosen_station_names:
-            idx = chosen_station_names.index(station_name)
-            attack_prob = f"{a_optimal[chosen_stations[idx]] * 100:.2f}%"
-            defend_prob = f"{P_defender[chosen_stations[idx]] * 100:.2f}%"
-            defense_alloc = f"{d_optimal[chosen_stations[idx]]:.3f} K/$"
-        else:
-            attack_prob = "0.00%"
-            defend_prob = "100.00%"  # If not attacked, assume full defense success
-            defense_alloc = "0.000 K/$"
+        attack_prob = f"{a_optimal[i] * 100:.2f}%"
+        defend_prob = f"{P_defender[i] * 100:.2f}%"
+        defense_alloc = f"{d_optimal[i]:.3f} K/$"
+        is_attacked = station_name in chosen_station_names_set  # Explicit flag
 
         station_data.append({
             "station_name": station_name,
             "attack_probability": attack_prob,
             "defend_probability": defend_prob,
-            "defense_allocation": defense_alloc
+            "defense_allocation": defense_alloc,
+            "is_attacked": is_attacked  # New field
         })
 
-    # Print the attacked stations and their data to the terminal
-    print("\nAttacked Stations and Their Data:")
+    # Debugging output (optional, preserved from Flask)
+    print("\nAttacked Stations (Top A by Probability):")
     print("=" * 50)
     for station in chosen_station_names:
         idx = chosen_station_names.index(station)
+        station_idx = chosen_stations[idx]
         print(f"Station Name: {station}")
-        print(f"  - Defense Allocation: {d_optimal[chosen_stations[idx]]:.3f} K/$")
-        print(f"  - Attack Probability: {a_optimal[chosen_stations[idx]] * 100:.2f}%")
-        print(f"  - Defender Success Probability: {P_defender[chosen_stations[idx]] * 100:.2f}%")
+        print(f"  - Defense Allocation: {d_optimal[station_idx]:.3f} K/$")
+        print(f"  - Attack Probability: {a_optimal[station_idx] * 100:.2f}%")
+        print(f"  - Defender Success Probability: {P_defender[station_idx] * 100:.2f}%")
         print("-" * 50)
 
     return station_data
