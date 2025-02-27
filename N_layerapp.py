@@ -350,6 +350,14 @@ def student_density():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@app.route('/get_station_data')
+def get_station_data():
+    time_period = request.args.get('resource_type', '')
+    C_bar_init = float(request.args.get('C_bar_init', 0))
+    num_attacks = int(request.args.get('num_attacks', 0))
+    station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
+    return jsonify(station_data)
+    
 @app.route('/data/markers')
 def get_markers():
     file_path = 'data/markers.json'

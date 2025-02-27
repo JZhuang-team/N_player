@@ -27,7 +27,7 @@
                 <div class="page-header">
                     <h2>Boston Transit Case</h2>
                 </div>
-
+            <form>
                 <!-- Model selection form -->
                 <form action="/bostonMap" method="post">
                     <!-- Time selection -->
@@ -67,9 +67,6 @@
                                 value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
                         </div>
                     </div>
-                
-                    <!-- Submit button -->
-                    <button type="submit" class="btn btn-primary submitButtons">Submit</button>
                 </form>
             </div>
         </div>
@@ -134,20 +131,48 @@
                 closeOnClick: false
             });
     
-            // **Load station data from Flask**
-            const stationData = JSON.parse('{{ station_data|tojson|safe }}');
-    
+
+            let stationData = []; // Initialize
+
+            // Fetch data
+            const debounce = (func, delay = 300) => {
+                let timer;
+                return (...args) => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => func.apply(this, args), delay);
+                };
+            };
+
+            const fetchStationData = debounce(() => {
+                const timePeriod = document.getElementById('resourceType').value;
+                const budget = document.getElementById('C_bar_init').value;
+                const numAttacks = document.getElementById('num_attacks').value;
+
+                fetch(`/get_station_data?resource_type=${encodeURIComponent(timePeriod)}&C_bar_init=${budget}&num_attacks=${numAttacks}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        stationData = data; // Update the station data
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+
+            // Inputs
+            document.getElementById('resourceType').addEventListener('change', fetchStationData);
+            document.getElementById('C_bar_init').addEventListener('input', fetchStationData);
+            document.getElementById('num_attacks').addEventListener('input', fetchStationData);
+
+            // Fetch data when loads
+            fetchStationData();
+
+            // Update data content
             map.on('mousemove', 'metro-stations-layer', (e) => {
                 const features = e.features;
                 if (!features.length) return;
-    
+
                 const feature = features[0];
                 const stationName = feature.properties.stop_name;
-    
-                // Find the station in the dataset (always exists now)
                 const stationInfo = stationData.find(s => s.station_name === stationName);
-    
-                // Construct popup content for all stations
+
                 let popupContent = `<strong>${stationName}</strong>`;
                 if (stationInfo) {
                     popupContent += `
@@ -158,7 +183,7 @@
                 } else {
                     popupContent += "<br>No Data Available";
                 }
-    
+
                 popup.setLngLat(e.lngLat)
                     .setHTML(popupContent)
                     .addTo(map);
