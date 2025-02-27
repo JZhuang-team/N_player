@@ -56,7 +56,7 @@
                                 value="{{ C_bar_init }}" step="1" oninput="syncInput('C_bar_init')">
                         </div>
                     </div>
-                      
+
                     <!-- Number of Attacks input -->
                     <div class="form-group">
                         <label for="num_attacks" class="sidebarHeaders">Number of Attacks:</label>
@@ -75,6 +75,172 @@
         <div class="map-area">
             <div id="map" class="map-canvas"></div>
         </div>
+
+        {% if station_data %}
+        <div class="right-sidebar">
+            <h3>Attacked Station Data</h3>
+            <table class="station-table">
+                <thead>
+                    <tr>
+                        <th>Station Name</th>
+                        <th>Defense Allocation</th>
+                        <th>Attack Probability</th>
+                    </tr>
+                </thead>
+                <tbody id="station-table-body">
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    The issue with your table not updating stems from a combination of problems in the bostonMap.html file you provided. Specifically:
+
+JavaScript Logic Order: The attackedStations variable is defined after the populateStationTable call, so it’s not available when the table is populated. Additionally, the attacked-stations-layer is added before attackedStations is defined, which causes it to fail.
+Function Parameter Mismatch: The populateStationTable function expects an attackedStations parameter, but when it’s called (populateStationTable(stationData)), it doesn’t receive this argument, leading to errors or no highlighting.
+To fix this, we need to:
+
+Move the attackedStations calculation before both the table population and the map layer addition.
+Pass attackedStations to populateStationTable.
+Ensure the attacked-stations-layer uses the correct attackedStations data.
+Use the is_attacked flag from your updated backend (in the first <DOCUMENT>) instead of relying on parseFloat(station.attack_probability) > 0, since your backend now explicitly marks the top A attacked stations.
+Here’s the corrected bostonMap.html:
+
+Updated bostonMap.html
+html
+Wrap
+Copy
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Index Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bostonMap.css') }}">
+    <style>
+        .main-content {
+            display: flex;
+            flex-direction: row;
+            height: calc(100vh - 50px);
+        }
+        .sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .map-area {
+            flex-grow: 1;
+            position: relative;
+        }
+        .right-sidebar {
+            width: 350px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #ddd;
+        }
+        .right-sidebar h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .station-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .station-table th, .station-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .station-table th {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        .station-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .station-table tr.attacked {
+            background-color: #ffcccc; /* Light red for attacked stations */
+        }
+    </style>
+</head>
+<body>
+    <div class="topnav">
+        <a href="{{ url_for('index') }}">Campus Case</a>
+        <a href="{{ url_for('boston_map') }}">Boston Transit Case</a>
+    </div>
+
+    <div class="main-content">
+        <div class="sidebar">
+            <div class="form-container">
+                <div class="page-header">
+                    <h2>Boston Transit Case</h2>
+                </div>
+                <form action="/bostonMap" method="post">
+                    <div class="resource-type">
+                        <label class="sidebarHeaders" for="resourceType">Time:</label>
+                        <select class="form-control" id="resourceType" name="resource_type">
+                            <option value="VERY_EARLY_MORNING">Very Early Morning</option>
+                            <option value="EARLY_AM">Early AM</option>
+                            <option value="AM_PEAK">AM Peak</option>
+                            <option value="MIDDAY_BASE">Midday Base</option>
+                            <option value="MIDDAY_SCHOOL">Midday School</option>
+                            <option value="PM_PEAK">PM Peak</option>
+                            <option value="EVENING">Evening</option>
+                            <option value="LATE_EVENING">Late Evening</option>
+                            <option value="NIGHT">Night</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="C_bar_init" class="sidebarHeaders">Budget:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="10000" step="1"
+                                value="{{ C_bar_init }}" oninput="syncSlider('C_bar_init')">
+                            <input type="number" id="C_bar_init_input" name="C_bar_init" min="0" max="10000"
+                                value="{{ C_bar_init }}" step="1" oninput="syncInput('C_bar_init')">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="num_attacks" class="sidebarHeaders">Number of Attacks:</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" name="num_attacks" id="num_attacks" min="0" max="114" step="1"
+                                value="{{ num_attacks }}" oninput="syncSlider('num_attacks')">
+                            <input type="number" id="num_attacks_input" name="num_attacks" min="0" max="114"
+                                value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary submitButtons">Submit</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="map-area">
+            <div id="map" class="map-canvas"></div>
+        </div>
+
+        <div class="right-sidebar">
+            <h3>Station Data</h3>
+            <table class="station-table">
+                <thead>
+                    <tr>
+                        <th>Station Name</th>
+                        <th>Defense Allocation</th>
+                        <th>Attack Probability</th>
+                    </tr>
+                </thead>
+                <tbody id="station-table-body">
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -88,12 +254,10 @@
         });
     
         map.on('load', () => {
-            // **Add Metro Lines**
             map.addSource('metro-lines', {
                 type: 'vector',
                 url: 'mapbox://quicksid.0th645in'
             });
-    
             map.addLayer({
                 id: 'metro-lines-layer',
                 type: 'line',
@@ -106,12 +270,10 @@
                 }
             });
     
-            // **Add Metro Stations**
             map.addSource('metro-stations', {
                 type: 'vector',
                 url: 'mapbox://quicksid.15kqqikj'
             });
-    
             map.addLayer({
                 id: 'metro-stations-layer',
                 type: 'circle',
@@ -125,46 +287,37 @@
                     'circle-opacity': 0.9,
                 }
             });
-    
+
+            const stationData = JSON.parse('{{ station_data|tojson|safe }}');
+            const attackedStations = stationData
+                .filter(station => station.is_attacked)
+                .map(station => station.station_name);
+
+            map.addLayer({
+                id: 'attacked-stations-layer',
+                type: 'circle',
+                source: 'metro-stations',
+                'source-layer': 'metro_stations-6hjjow',
+                filter: ['in', 'stop_name', ...attackedStations],
+                paint: {
+                    'circle-radius': 7,
+                    'circle-color': '#FF0000',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#000000',
+                    'circle-opacity': 0.9
+                }
+            });
+
+            populateStationTable(stationData, attackedStations);
+
             const popup = new mapboxgl.Popup({
                 closeButton: false,
                 closeOnClick: false
             });
     
-
-            let stationData = []; // Initialize
-
-            // Fetch data
-            const debounce = (func, delay = 300) => {
-                let timer;
-                return (...args) => {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => func.apply(this, args), delay);
-                };
-            };
-
-            const fetchStationData = debounce(() => {
-                const timePeriod = document.getElementById('resourceType').value;
-                const budget = document.getElementById('C_bar_init').value;
-                const numAttacks = document.getElementById('num_attacks').value;
-
-                fetch(`/get_station_data?resource_type=${encodeURIComponent(timePeriod)}&C_bar_init=${budget}&num_attacks=${numAttacks}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        stationData = data; // Update the station data
-                    })
-                    .catch(error => console.error('Error:', error));
-            });
-
-            // Inputs
-            document.getElementById('resourceType').addEventListener('change', fetchStationData);
-            document.getElementById('C_bar_init').addEventListener('input', fetchStationData);
-            document.getElementById('num_attacks').addEventListener('input', fetchStationData);
-
-            // Fetch data when loads
-            fetchStationData();
-
-            // Update data content
+            // **Load station data from Flask**
+            const stationData = JSON.parse('{{ station_data|tojson|safe }}');
+    
             map.on('mousemove', 'metro-stations-layer', (e) => {
                 const features = e.features;
                 if (!features.length) return;
@@ -172,7 +325,8 @@
                 const feature = features[0];
                 const stationName = feature.properties.stop_name;
                 const stationInfo = stationData.find(s => s.station_name === stationName);
-
+    
+                // Construct popup content for all stations
                 let popupContent = `<strong>${stationName}</strong>`;
                 if (stationInfo) {
                     popupContent += `
@@ -192,24 +346,54 @@
             map.on('mouseleave', 'metro-stations-layer', () => {
                 popup.remove();
             });
+
+            if (stationData.length > 0) {
+                const attackedStations = stationData
+                    .filter(station => station.is_attacked)
+                    .map(station => station.station_name);
+
+                map.addLayer({
+                    id: 'attacked-stations-layer',
+                    type: 'circle',
+                    // ... layer config ...
+                });
+                
+                const attackedStationData = stationData.filter(station => station.is_attacked);
+                populateStationTable(attackedStationData, attackedStations);
+            }
         });
 
-        
+        function populateStationTable(stationData, attackedStations) {
+            const tableBody = document.getElementById('station-table-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            stationData.forEach(station => {
+                const row = document.createElement('tr');
+                if (attackedStations.includes(station.station_name)) {
+                    row.classList.add('attacked');
+                }
+                row.innerHTML = `
+                    <td>${station.station_name}</td>
+                    <td>${station.defense_allocation}</td>
+                    <td>${station.attack_probability}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
         function syncSlider(id) {
             let slider = document.getElementById(id);
             let numberInput = document.getElementById(id + "_input");
-            
-            numberInput.value = slider.value;  // Update number input when slider changes
+            numberInput.value = slider.value;
         }
 
         function syncInput(id) {
             let slider = document.getElementById(id);
             let numberInput = document.getElementById(id + "_input");
-
-            slider.value = numberInput.value;  // Update slider when number input changes
+            slider.value = numberInput.value;
         }
 
-        // Ensure real-time updates between the slider and input
         document.addEventListener("DOMContentLoaded", function () {
             let sliders = document.querySelectorAll(".slider");
             let numberInputs = document.querySelectorAll("input[type='number']");
