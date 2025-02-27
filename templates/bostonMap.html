@@ -79,7 +79,7 @@
             <div id="map" class="map-canvas"></div>
         </div>
 
-        <!-- Right Sidebar with Station Table -->
+        {% if station_data %}
         <div class="right-sidebar">
             <h3>Station Data</h3>
             <table class="station-table">
@@ -91,10 +91,10 @@
                     </tr>
                 </thead>
                 <tbody id="station-table-body">
-                    <!-- Table rows will be populated dynamically via JavaScript -->
                 </tbody>
             </table>
         </div>
+        {% endif %}
     </div>
 
     The issue with your table not updating stems from a combination of problems in the bostonMap.html file you provided. Specifically:
@@ -345,10 +345,25 @@ Copy
             map.on('mouseleave', 'metro-stations-layer', () => {
                 popup.remove();
             });
+
+            if (stationData.length > 0) {
+                const attackedStations = stationData
+                    .filter(station => station.is_attacked)
+                    .map(station => station.station_name);
+
+                map.addLayer({
+                    id: 'attacked-stations-layer',
+                    type: 'circle',
+                    // ... layer config ...
+                });
+
+                populateStationTable(stationData, attackedStations);
+            }
         });
 
         function populateStationTable(stationData, attackedStations) {
             const tableBody = document.getElementById('station-table-body');
+            if (!tableBody) return;
             tableBody.innerHTML = '';
 
             stationData.forEach(station => {
