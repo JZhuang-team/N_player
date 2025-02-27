@@ -356,8 +356,9 @@ Copy
                     type: 'circle',
                     // ... layer config ...
                 });
-
-                populateStationTable(stationData, attackedStations);
+                
+                const attackedStationData = stationData.filter(station => station.is_attacked);
+                populateStationTable(attackedStationData, attackedStations);
             }
         });
 
