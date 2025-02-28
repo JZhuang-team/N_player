@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Index Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+    
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='ubpd.css') }}">
+</head>
+<body>
+    <div class="topnav">
+        <a href="{{url_for('index')}}">Campus Case</a>
+        <a href="{{ url_for('boston_map')}}">Boston Transit Case</a>
+        <a href="{{ url_for('ubpd') }}">UBPD Case</a>
+      </div>
+    <div class="main-content">
+        <div class="sidebar">
+            <div class="form-container">
+                <div class="page-header">
+                    <h2></h2>
+                </div>
+                <form>
+                    <div class="form-group">
+                        <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
+                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a building...">
+                        <div class="dropdown">
+                            <div class="dropdown-menu" id="locationDropdown" style="display: none; width: 100%; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="sidebarHeaders">Spawn Marker: </label>
+                        <div>
+                            <button type="button" class="btn btn-primary spawnMarker">Spawn</button>
+                            <button type="button" class="btn btn-primary clearMarker">Clear</button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+
+            <div id="heatmap-controls">
+                <!-- Heatmap Button -->
+                <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
+
+                <!-- Heatmap Weekday Dropdown -->
+                <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                    <label for="weekday-dropdown"><b>Weekday:</b></label>
+                    <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                    </select>
+                </div>
+
+                <!-- Heatmap Time Slider -->
+                <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                    <label for="time-slider"><b>Time:</b></label>
+                    <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
+                    <span id="time-display">8:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-area">
+            <div id="map" class="map-canvas"></div>
+            <pre id="coordinates" class="coordinates"></pre>
+        </div>
+
+        <div id="heatmap-legend" class="legend" style="display: none">
+            <h6>Student Population:</h6>
+            <div><span style="background-color: #C7445D"></span>1000+</div>
+            <div><span style="background-color: #E07069"></span>801-1000</div>
+            <div><span style="background-color: #FF972D"></span>501-800</div>
+            <div><span style="background-color: #F0D55E"></span>301-500</div>
+            <div><span style="background-color: #509BC7"></span>101-300</div>
+            <div><span style="background-color: #4E6DBD"></span>51-100</div>
+            <div><span style="background-color: #203A7C"></span>1-50</div>
+            <div><span style="background-color: #FFFFFF"></span>0</div>
+        </div>
+
+        <div class="map-view-buttons">
+            <div class="btn-group btn-group-horizontal" role="group" aria-label="Map Style Buttons">
+                <button type="button" class="btn btn-map" onclick="switchView('streets-v11')">Streets</button>
+                <button type="button" class="btn btn-map" onclick="switchView('satellite-streets-v11')">Satellite</button>
+                <button type="button" class="btn btn-map" id="toggle-dark-light" onclick="toggleDarkLight()">Light</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Marker
+        let currentMarkers = [];
+        const coordinatesElement = document.getElementById('coordinates');
+
+        // Spawn button
+        document.querySelector('.spawnMarker').addEventListener('click', function() {
+            // Create marker
+            const marker = new mapboxgl.Marker({
+                draggable: true
+            })
+            .setLngLat(map.getCenter())
+            .addTo(map);
+
+            // Store reference
+            currentMarkers.push(marker);
+
+            // Add drag and drop
+            marker.on('dragend', function() {
+                const lngLat = marker.getLngLat();
+                coordinatesElement.style.display = 'block';
+                coordinatesElement.innerHTML = `Longitude: ${lngLat.lng.toFixed(5)}<br />Latitude: ${lngLat.lat.toFixed(5)}`;
+            });
+
+            // Show coordinates
+            const initialLngLat = marker.getLngLat();
+            coordinatesElement.style.display = 'block';
+            coordinatesElement.innerHTML = `Longitude: ${initialLngLat.lng.toFixed(5)}<br />Latitude: ${initialLngLat.lat.toFixed(5)}`;
+        });
+
+        // Clear button
+        document.querySelector('.clearMarker').addEventListener('click', function() {
+            currentMarkers.forEach(marker => marker.remove());
+            currentMarkers = [];
+            coordinatesElement.style.display = 'none';
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let locations = [];
+        
+            // Fetch data 
+            fetch('/data/markers')
+                .then(response => response.json())
+                .then(data => {
+                    locations = data.results.map(location => ({
+                        id: location.locationid,
+                        title: location.title,
+                        coordinates: location.latlng // [lat, lng]
+                    }))
+                    .sort((a, b) => a.title.localeCompare(b.title)); // Sort
+                })
+                .catch(error => console.error('Error loading locations:', error));
+        
+            const searchInput = document.getElementById('locationSearch');
+            const dropdownMenu = document.getElementById('locationDropdown');
+        
+            // Update dropdown menu
+            function updateDropdown(searchTerm) {
+                dropdownMenu.innerHTML = ''; // Clear previous results
+                
+                let filteredLocations;
+                if (searchTerm) {
+                    // Filter based on search
+                    filteredLocations = locations.filter(location =>
+                        location.title.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                } else {
+                    // Drop down menu 
+                    filteredLocations = locations;
+                }
+        
+                if (filteredLocations.length === 0) {
+                    dropdownMenu.style.display = 'none';
+                    return;
+                }
+        
+                filteredLocations.forEach(location => {
+                    const option = document.createElement('div');
+                    option.classList.add('dropdown-item');
+                    option.textContent = location.title;
+                    option.dataset.id = location.id; // Store ID
+                    option.dataset.campus = location.campus; // Store Campus
+                    option.dataset.lat = location.coordinates[0]; // Store Latitude
+                    option.dataset.lng = location.coordinates[1]; // Store Longitude
+        
+                    option.addEventListener('click', function () {
+                        searchInput.value = location.title;  
+                        dropdownMenu.style.display = 'none';  
+                        
+                        // Log selected location's coordinates
+                        console.log(`Selected Location: ${location.title}`);
+                        console.log(`Coordinates: ${location.coordinates[0]}, ${location.coordinates[1]}`);
+                        
+                        // move
+                        flyToLocation(location.coordinates);
+                    });
+        
+                    dropdownMenu.appendChild(option);
+                });
+        
+                dropdownMenu.style.display = 'block';  
+            }
+        
+            // Fly + add marker
+            let currMarkers = [];
+            function flyToLocation(coordinates) {
+                currMarkers.forEach(marker => marker.remove());
+                currMarkers = [];
+
+                const [lat, lng] = coordinates; 
+                map.flyTo({ center: [lng, lat], zoom: 15 });  
+
+                const marker = new mapboxgl.Marker({color: "#FF0000"}).setLngLat([lng, lat]).addTo(map);
+
+                currMarkers.push(marker);
+            }
+
+            // Focus 
+            searchInput.addEventListener('focus', function () {
+                updateDropdown(this.value);
+            });
+        
+            // Input 
+            searchInput.addEventListener('input', function () {
+                updateDropdown(this.value);
+            });
+        
+            // Hide dropdown
+            document.addEventListener('click', function (event) {
+                if (!searchInput.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw'; // Replace with your Mapbox access token
+        const map = new mapboxgl.Map({
+            container: 'map', 
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', 
+            center: [-78.787, 43],
+            zoom: 15
+        });
+
+        function switchView(styleId) {
+            var styleUrl = 'mapbox://styles/mapbox/' + styleId;
+            if (map) {
+                map.setStyle(styleUrl);
+                map.on('style.load', function() {
+                    addMapLayersAndSources();
+                    });
+                }
+        }
+
+        // Function to toggle between dark and light views
+        function toggleDarkLight() {
+            const toggleButton = document.getElementById('toggle-dark-light');
+            const currentText = toggleButton.innerText;
+
+            if (currentText === 'Light') {
+                switchView('dark-v10'); // Switch to dark view
+                toggleButton.innerText = 'Dark'; // Update button text
+            } else {
+                switchView('light-v10'); // Switch to light view
+                toggleButton.innerText = 'Light'; // Update button text
+            }
+        }
+
+
+        function setLayer(layer) {
+            document.getElementById("total_layers").value = layer;
+            updateButtonStyles(layer);
+            localStorage.setItem("selectedLayer", layer);
+            console.log("layer value is : " + typeof(layer) + layer)
+            console.log(localStorage.getItem('selectedLayer'))
+        }
+
+        function updateButtonStyles(layer) {
+            document.getElementById("layer1_btn").className = layer === 1 ? "btn btn-primary" : "btn btn-secondary";
+            document.getElementById("layer2_btn").className = layer === 2 ? "btn btn-primary" : "btn btn-secondary";
+        }
+
+        // Maintain resource input syncing functions
+        function syncSlider(id) {
+            const slider = document.getElementById(id);
+            const input = document.getElementById(id + '_input');
+            input.value = slider.value;
+
+            if (id === 'C_bar_init') {
+                localStorage.setItem('C_bar_init', slider.value);
+            }
+        }
+
+        function syncInput(id) {
+            const input = document.getElementById(id + '_input');
+            const slider = document.getElementById(id);
+
+            if (id === 'total_layers') {
+                let value = parseInt(input.value);
+                if (value < 1) value = 1;
+                if (value > 2) value = 2;
+                setLayer(value); // Ensure buttons update
+            } else {
+                slider.value = input.value;
+            }
+        }
+
+
+        function toggleLayer(layerName) {
+            var visibility = map.getLayoutProperty(layerName, 'visibility');
+            if (visibility === 'visible') {
+                map.setLayoutProperty(layerName, 'visibility', 'none');
+            } else {
+                map.setLayoutProperty(layerName, 'visibility', 'visible');
+            }
+        }
+
+        let studentDensityData = {};
+        let currentTime = "8:00";; // Default hour
+        let currentWeekday = "Monday";
+
+        // Fetch CSV Data from Flask API
+        fetch('/api/student-density')
+            .then(response => response.json())
+            .then(data => {
+                    studentDensityData = data;
+                    //console.log("Fetched Data:", studentDensityData);
+                    processCSVData(studentDensityData);
+                })
+            .catch(error => console.error('Error fetching CSV data:', error));
+
+        // Process CSV Data and Convert to GeoJSON
+        function processCSVData(data) {
+            let geoJSONData = {}; // Initialize the structured dataset
+
+            data.forEach(row => {
+                const { Building, Time, Weekday, Student_Count_Building } = row;
+
+                if (!geoJSONData[Weekday]) {
+                    geoJSONData[Weekday] = {}; // Initialize the weekday if not present
+                }
+
+                if (!geoJSONData[Weekday][Time]) {
+                    geoJSONData[Weekday][Time] = {}; // Initialize time slot if not present
+                }
+
+                // Store student count for the building inside the respective time slot
+                geoJSONData[Weekday][Time][Building] = Student_Count_Building;
+            });
+
+            studentDensityData = geoJSONData;
+            //console.log('Processed CSV Data (GeoJSON): ', studentDensityData);
+        }
+
+        function addHeatmapLayer() {
+
+            let timeKey = currentTime;
+            let weekdayKey = currentWeekday;
+
+            //console.log("Time Key: ", timeKey);
+            //console.log("Weekday Key: ", weekdayKey);
+
+            let rawData = studentDensityData[weekdayKey] && studentDensityData[weekdayKey][timeKey] ? studentDensityData[weekdayKey][timeKey] : {};
+            
+            //console.log("Features to be added to heatmap:", rawData);
+
+            if (!map.getSource('buildings-heatmap')) {
+                map.addSource('buildings-heatmap', {
+                    'type': 'vector',
+                    'url': 'mapbox://quicksid.cm77rz6ea18ut1no0bvytqdiz-4e2lh'
+                });
+
+                map.addLayer({
+                id: "buildings-layer",
+                type: "fill",
+                source: "buildings-heatmap",
+                "source-layer": "ub_heatmap",
+                paint: {
+                    "fill-color": "grey",
+                    "fill-opacity": 0.4
+                    }
+                });
+            }
+
+            let buildingFeatures = map.querySourceFeatures('buildings-heatmap', {
+                sourceLayer: 'ub_heatmap',
+            });
+            
+
+            let features = buildingFeatures.map(feature => {
+                let coordinates = feature.geometry.coordinates;
+                let count = rawData[feature.properties.id] || 0
+
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: coordinates
+                    },
+                    properties: {
+                        count: count,
+                        building_name: feature.properties.building
+                    }
+                }
+
+                //console.log("geometry type:", buildingFeatures[0].geometry.type);
+                //console.log("geometry coordinates:", buildingFeatures[0].geometry.coordinates[0]);
+
+            }).filter(feature => feature !== null); // Remove null entries
+
+            if (!map.getSource('heatmap')) {
+                map.addSource('heatmap', {
+                    type: 'geojson',
+                    data: {
+                        type: "FeatureCollection",
+                        features: features || []
+                    }
+                });
+
+                //console.log(map.getSource('heatmap'));
+
+                map.addLayer({
+                    id: 'heatmap-radial',
+                    type: 'heatmap',
+                    source: 'heatmap',
+                    minzoom: 0,
+                    maxzoom: 16,
+                    paint: {
+                        "heatmap-weight": [
+                            "interpolate",
+                            ["linear"],
+                            ["get", "count"],
+                            0, 0,
+                            10, 1
+                        ],
+                        "heatmap-intensity": 1,
+                        "heatmap-color": [
+                            "interpolate",
+                            ["linear"],
+                            ["heatmap-density"],
+                            0, "rgba(255,255,255,0)",
+                            0.2, "blue",
+                            0.4, "cyan",
+                            0.6, "lime",
+                            0.8, "yellow",
+                            1, "red"
+                        ],
+                        "heatmap-radius": [
+                            "interpolate",
+                            ["linear"],
+                            ["zoom"],
+                            0, 5,
+                            15, 25
+                        ],
+                        "heatmap-opacity": 0.7
+                    }
+                });
+
+                map.addLayer({
+                    id: 'heatmap-buildings',
+                    type: 'fill',
+                    source: 'heatmap',
+                    minzoom: 16,
+                    maxzoom: 22,
+                    paint: {
+                        'fill-color': [
+                            "interpolate",
+                            ["linear"],
+                            ["get", "count"],
+                            0, "#FFFFFF",
+                            1, "#203A7C",
+                            50, "#4E6DBD",
+                            100, "#509BC7",
+                            300, "#F0D55E",
+                            500, "#FF972D",
+                            800, "#E07069",
+                            1000, "#C7445D"
+                        ],
+                    'fill-opacity': [
+                        "case",
+                        ["==", ["get", "count"], 0], 0,
+                        1
+                        ]
+                    }
+                });
+
+                map.addLayer({
+                    id: "heatmap-buildings-labels",
+                    type: "symbol",
+                    source: "heatmap",
+                    minzoom: 16,
+                    layout: {
+                        "text-field": ["get", "building_name"],
+                        "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+                        "text-size": 10,
+                        "text-anchor": "center"
+                    },
+                    paint: {
+                        "text-color": "#000000",
+                        "text-halo-color": "#FFFFFF",
+                        "text-halo-width": 0.5
+                    }
+                });
+
+                map.on('zoom', () => {
+                    let zoomLevel = map.getZoom();
+                    
+                    if (zoomLevel >= 16) {
+                        map.setPaintProperty('buildings-layer', 'fill-opacity', [
+                            "case",
+                            ["==", ["get", "count"], 0], 0, // Hide only buildings with count = 0
+                            0
+                        ]);
+                    }
+                });
+
+                const popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: false
+                });
+
+                function addPopupEvent(layerName) {
+                    map.on('mousemove', layerName, (e) => {
+                        const properties = e.features[0].properties;
+                        const density = properties.count || 0;
+                        const buildingName = properties.building_name || "Unknown Building";
+                        const coordinates = e.lngLat;
+                        
+                        popup.setLngLat(coordinates)
+                        .setHTML(`<b>${buildingName}</b><br><b>Student Count:</b> ${density}`)
+                        .addTo(map);
+                    });
+                    
+                    map.on('mouseleave', layerName, () => {
+                        popup.remove();
+                    });
+                }
+                
+                addPopupEvent('heatmap-radial');
+                addPopupEvent('heatmap-buildings');
+
+            } else {
+                //console.log("Updating existing heatmap...")
+                map.getSource('heatmap').setData({
+                    type: "FeatureCollection",
+                    features: features
+                });
+            }
+        }
+
+        function removeHeatmapLayer() {
+            if (map.getSource('heatmap')) {
+                map.removeSource('heatmap');
+            }
+            if (map.getLayer('heatmap-radial')) {
+                map.removeLayer('heatmap-radial');
+            }
+            if (map.getLayer('heatmap-buildings')) {
+                map.removeLayer('heatmap-buildings');
+            }
+            if (map.getLayer('heatmap-buildings-labels')) {
+                map.removeLayer('heatmap-buildings-labels');
+            }
+        }
+
+        let heatmapVisible = false;
+
+        function toggleHeatmap() {
+            heatmapVisible = !heatmapVisible;
+
+            const dropdownContainer = document.getElementById('weekday-dropdown-container');
+            const sliderContainer = document.getElementById("time-slider-container")
+            const button = document.getElementById("toggle-heatmap-btn")
+            const heatmapLegend = document.getElementById('heatmap-legend');
+
+            if (heatmapVisible) {
+                dropdownContainer.style.display = "block";
+                sliderContainer.style.display = "block";
+                heatmapLegend.style.display = 'block';
+                button.innerText = "Hide Heatmap";
+                button.classList.add("active");
+                addHeatmapLayer();
+            } else {
+                dropdownContainer.style.display = "none";
+                sliderContainer.style.display = "none";
+                heatmapLegend.style.display = 'none';
+                button.innerText = "Show Heatmap";
+                button.classList.remove("active");
+                removeHeatmapLayer();
+            }
+        }
+
+        function updateWeekday(weekday) {
+            currentWeekday = weekday;
+            //console.log("Selected Weekday: ", currentWeekday);
+
+            if (heatmapVisible) {
+                addHeatmapLayer();
+            }
+        }
+
+
+        function updateTime(time) {
+
+            let hour = Math.floor(time);
+            let minutes = Math.round((time - hour) * 60);
+            
+            currentTime = `${hour}:${minutes.toString().padStart(2, '0')}`;
+            
+            document.getElementById("time-display").innerText = currentTime;
+            //console.log("Selected Time: ", currentTime);
+            
+            if (heatmapVisible) {
+                addHeatmapLayer();
+            }
+        }
+
+
+    </script>
+</body>
+</html>

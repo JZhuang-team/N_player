@@ -308,6 +308,12 @@ def index():
             )
 
     return render_template('home.html')
+
+@app.route('/ubpd')
+def ubpd():
+    return render_template('ubpd.html')
+
+
 @app.route('/api/metrics')
 def get_metrics():
     return jsonify(metrics_data)
