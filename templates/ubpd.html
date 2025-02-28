@@ -56,7 +56,7 @@
                 <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
 
                 <!-- Heatmap Weekday Dropdown -->
-                <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                <div id="weekday-dropdown-container" style="display: none; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
                     <label for="weekday-dropdown"><b>Weekday:</b></label>
                     <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
                         <option value="Monday">Monday</option>
@@ -68,7 +68,7 @@
                 </div>
 
                 <!-- Heatmap Time Slider -->
-                <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                <div id="time-slider-container" style="display: none; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
                     <label for="time-slider"><b>Time:</b></label>
                     <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
                     <span id="time-display">8:00</span>

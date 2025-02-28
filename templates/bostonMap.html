@@ -209,11 +209,13 @@
         function populateStationTable(data, attackedStations) {
             const tableBody = document.getElementById('station-table-body');
             tableBody.innerHTML = '';
-            data.forEach(station => {
+
+            // Filter only attacked stations
+            const attackedData = data.filter(station => attackedStations.includes(station.station_name));
+
+            attackedData.forEach(station => {
                 const row = document.createElement('tr');
-                if (attackedStations.includes(station.station_name)) {
-                    row.classList.add('attacked');
-                }
+                row.classList.add('attacked'); 
                 row.innerHTML = `
                     <td>${station.station_name}</td>
                     <td>${station.defense_allocation}</td>
@@ -222,6 +224,7 @@
                 tableBody.appendChild(row);
             });
         }
+
 
         function syncSlider(id) {
             let slider = document.getElementById(id);
