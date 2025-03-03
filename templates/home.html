@@ -34,13 +34,15 @@
 
                 <form action="/results" method="post">
                     <div class="form-group">
-                        <label for="total_layers" class="sidebarHeaders">Number of Layers:</label>
-                        <div class="button-container" style="padding-bottom: 5%;">
-                            <button type="button" class="btn btn-primary" id="layer1_btn" onclick="setLayer(1)">1 Layer</button>
-                            <button type="button" class="btn btn-secondary" id="layer2_btn" onclick="setLayer(2)">2 Layers</button>
-                        </div>
+                        <label for="total_layers_select" class="sidebarHeaders">Number of Layers:</label>
+                        <select class="form-control" id="total_layers_select" name="total_layers_select" onchange="setLayer(this.value)">
+                            <option value="">Select number of layers</option>
+                            <option value="1">1 Layer</option>
+                            <option value="2">2 Layers</option>
+                        </select>
                         <input type="hidden" name="total_layers" id="total_layers" value="1">
                     </div>
+                    
 
                     <div class="form-group">
                         <label class="sidebarHeaders" for="resourceType">Resource Type:</label>
@@ -323,15 +325,17 @@
 
         function setLayer(layer) {
             document.getElementById("total_layers").value = layer;
-            updateButtonStyles(layer);
             localStorage.setItem("selectedLayer", layer);
             console.log("layer value is : " + typeof(layer) + layer)
             console.log(localStorage.getItem('selectedLayer'))
         }
 
-        function updateButtonStyles(layer) {
-            document.getElementById("layer1_btn").className = layer === 1 ? "btn btn-primary" : "btn btn-secondary";
-            document.getElementById("layer2_btn").className = layer === 2 ? "btn btn-primary" : "btn btn-secondary";
+
+        function setLayer(layer) {
+            document.getElementById("total_layers").value = layer;
+            localStorage.setItem("selectedLayer", layer);
+            console.log("layer value is : " + typeof(layer) + layer);
+            console.log(localStorage.getItem('selectedLayer'));
         }
 
         // Maintain resource input syncing functions
