@@ -102,36 +102,64 @@
         </div>
 
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+
 
     <script>
-        // Marker
+        // Marker and Distance Variables
         let currentMarkers = [];
         const coordinatesElement = document.getElementById('coordinates');
+        let buildingDistances = {}; // Store distances between markers and buildings
 
         // Spawn button
         document.querySelector('.spawnMarker').addEventListener('click', function() {
-            // Create marker
             const marker = new mapboxgl.Marker({
                 draggable: true
             })
             .setLngLat(map.getCenter())
             .addTo(map);
 
-            // Store reference
+            // Generate a unique ID for each marker 
+            const markerId = `marker-${Date.now()}`;
+            marker.markerId = markerId;  
+
+            // Store reference with the ID
             currentMarkers.push(marker);
 
-            // Add drag and drop
+            // Add drag and drop functionality
             marker.on('dragend', function() {
                 const lngLat = marker.getLngLat();
                 coordinatesElement.style.display = 'block';
                 coordinatesElement.innerHTML = `Longitude: ${lngLat.lng.toFixed(5)}<br />Latitude: ${lngLat.lat.toFixed(5)}`;
+                calculateDistances(lngLat, markerId); 
             });
 
-            // Show coordinates
+            // Show coordinates and calculate distances initially
             const initialLngLat = marker.getLngLat();
             coordinatesElement.style.display = 'block';
             coordinatesElement.innerHTML = `Longitude: ${initialLngLat.lng.toFixed(5)}<br />Latitude: ${initialLngLat.lat.toFixed(5)}`;
+            calculateDistances(initialLngLat, markerId);
         });
+
+        // Calculate and store distances between marker and buildings
+        function calculateDistances(markerLngLat, markerId) {
+            locations.forEach(location => {
+                const buildingCoords = location.coordinates; // [lat, lng]
+                const distance = turf.distance(
+                    turf.point([markerLngLat.lng, markerLngLat.lat]),
+                    turf.point([buildingCoords[1], buildingCoords[0]])
+                );
+                
+                // Store the calculated distance 
+                if (!buildingDistances[markerId]) {
+                    buildingDistances[markerId] = {}; 
+                }
+                buildingDistances[markerId][location.title] = distance;
+            });
+
+            // Optionally log the distances
+            console.log(buildingDistances);
+        }
 
         // Clear button
         document.querySelector('.clearMarker').addEventListener('click', function() {
@@ -139,12 +167,11 @@
             currentMarkers = [];
             coordinatesElement.style.display = 'none';
         });
+
     </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            let locations = [];
-        
             // Fetch data 
             fetch('/data/markers')
                 .then(response => response.json())
@@ -155,6 +182,8 @@
                         coordinates: location.latlng // [lat, lng]
                     }))
                     .sort((a, b) => a.title.localeCompare(b.title)); // Sort
+                    
+                    console.log(locations);  
                 })
                 .catch(error => console.error('Error loading locations:', error));
         
@@ -163,7 +192,7 @@
         
             // Update dropdown menu
             function updateDropdown(searchTerm) {
-                dropdownMenu.innerHTML = ''; // Clear previous results
+                dropdownMenu.innerHTML = '';  
                 
                 let filteredLocations;
                 if (searchTerm) {
