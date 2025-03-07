@@ -72,7 +72,7 @@
                     <tr>
                         <th>Station Name</th>
                         <th>Defense Allocation</th>
-                        <th>Attack Probability</th>
+                        <th>Probability to Attack Station</th>
                     </tr>
                 </thead>
                 <tbody id="station-table-body">
@@ -197,7 +197,7 @@
                 if (station) {
                     popup.setLngLat(e.lngLat)
                         .setHTML(`<strong>${stationName}</strong>
-                            <br>Attack Probability: ${station.attack_probability}
+                            <br>Probability to Attack Station: ${station.attack_probability}
                             <br>Defense Allocation: ${station.defense_allocation}`)
                         .addTo(map);
                 }
