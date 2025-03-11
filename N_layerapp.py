@@ -240,6 +240,40 @@ def initialization(_nLayers, C_bar_init):
     obj_base = instance_nLY(s=s_init, alpha=alpha_init, beta=beta_init, theta=theta_init, cost=cost_init, gamma=gamma_init, C_bar=C_bar_init)
     return obj_base
 
+def get_all_locations_geojson(time_period):
+     df = pd.read_csv('./data/attractiveness_dhs.csv')
+ 
+     score_column = f"base_attractiveness_score_{time_period}"
+     if score_column not in df.columns:
+         raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
+     
+     features = []
+     for _, row in df.iterrows():
+         feature = {
+             "type": "Feature",
+             "geometry": {
+                 "type": "Point",
+                 "coordinates": [row["Lon"], row["Lat"]]  # GeoJSON expects [longitude, latitude]
+             },
+             "properties": {
+                 "station_name": row["station_name"],
+                 "attractiveness_score": row[score_column]
+             }
+         }
+         features.append(feature)
+     
+     geojson = {
+         "type": "FeatureCollection",
+         "features": features
+     }
+     
+     return geojson
+ 
+@app.route('/get_heatmap_data', methods=['GET'])
+def heatmap():
+    time_period = request.args.get("time_period", "")
+    return jsonify(get_all_locations_geojson(time_period))
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global obj2, metrics_data
