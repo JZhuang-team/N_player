@@ -40,70 +40,45 @@ def attack_constraint(a, A):
     return A - sum(a)  # Allow multiple attacks
 
 def boston_transit_logic(C, A, time_period):
-    # Set a fixed random seed for reproducibility
-    np.random.seed(42)
-
-    # Debugging: Print the time_period parameter
-    print(f"Time period passed to boston_transit_logic: {time_period}")
-
     # Get the appropriate attractiveness score column based on the time period
     score_column = f"base_attractiveness_score_{time_period}"
-    print(f"Using column: {score_column}")
-
-    # Check if the column exists in the dataset
     if score_column not in df.columns:
-        raise ValueError(f"Invalid time period: {time_period}. Column '{score_column}' not found in the dataset.")
+        raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
 
     v = df[score_column].tolist()  # Attractiveness scores
-    print(f"Attractiveness scores: {v}")  # Debugging output
     n = len(v)  # Number of stations
 
-    # Handle the case when A = 0
-    if A == 0:
-        # No attacks, so set all attack probabilities to 0 and defense allocations to 0
-        d_optimal = np.zeros(n)  # No defense allocation needed
-        a_optimal = np.zeros(n)  # No attacks
-        P_defender = np.ones(n)  # Defender success probability is 100% for all stations
-        chosen_station_names = []  # No stations are attacked
-    else:
-        # Slightly randomized initialization
-        d_init = np.full(n, C / n) * np.random.uniform(0.9, 1.1, n)  # Small random variation
-        a_init = np.full(n, A / n) * np.random.uniform(0.9, 1.1, n)  # Small random variation
+    # Initialize variables (matching notebook)
+    d_init = np.random.uniform(0, C / n, n)  # Initial defense spread
+    a_init = np.random.uniform(0, 1, n)      # Initial attack probabilities
 
-        # Debugging output
-        print("Initial defense allocations:", d_init)
-        print("Initial attack probabilities:", a_init)
+    # Bounds (matching notebook)
+    d_bounds = [(0, C / 5) for _ in range(n)]  # Defender: 0 to C/5 per station
+    a_bounds = [(0, 1) for _ in range(n)]      # Attacker: 0 to 1 per station
 
-        # Bounds
-        d_bounds = [(0, C / 5) for _ in range(n)]  # Defender: 0 to C/5 per station
-        a_bounds = [(0, 1) for _ in range(n)]      # Attacker: 0 to 1 per station
+    # Constraints (matching notebook)
+    d_constraints = {'type': 'eq', 'fun': lambda d: C - np.sum(d)}  # Budget constraint
+    a_constraints = {'type': 'eq', 'fun': lambda a: A - np.sum(a)}  # Attack constraint
 
-        # Constraints
-        d_constraints = {'type': 'eq', 'fun': lambda d: C - np.sum(d)}  # Budget constraint
-        a_constraints = {'type': 'eq', 'fun': lambda a: A - np.sum(a)}  # Attack constraint
+    # Defender optimization (matching notebook)
+    d_result = minimize(defender_objective, d_init, args=(a_init, v), method='SLSQP', 
+                        bounds=d_bounds, constraints=d_constraints)
+    d_optimal = d_result.x
 
-        # Defender optimization
-        d_result = minimize(
-            defender_objective, d_init, args=(a_init, v), method='SLSQP',
-            bounds=d_bounds, constraints=d_constraints, options={'ftol': 1e-9, 'maxiter': 1000}
-        )
-        d_optimal = d_result.x
+    # Attacker optimization (matching notebook)
+    a_result = minimize(attacker_objective, a_init, args=(d_optimal, v), method='SLSQP', 
+                        bounds=a_bounds, constraints=a_constraints)
+    a_optimal = a_result.x
 
-        # Attacker optimization
-        a_result = minimize(
-            attacker_objective, a_init, args=(d_optimal, v), method='SLSQP',
-            bounds=a_bounds, constraints=a_constraints, options={'ftol': 1e-9, 'maxiter': 1000}
-        )
-        a_optimal = a_result.x
+    # Compute defender success probability (matching notebook)
+    P_defender = defender_success_prob(d_optimal)
 
-        # Compute defender success probability
-        P_defender = defender_success_prob(d_optimal)
+    # Identify top A attacked stations (matching notebook)
+    chosen_stations = np.argsort(a_optimal)[-A:]  # Top A by attack probability
+    chosen_station_names = df.loc[chosen_stations, "station_name"].tolist()
 
-        # Identify top A attacked stations
-        chosen_stations = np.argsort(a_optimal)[-A:]  # Top A by attack probability
-        chosen_station_names = df.loc[chosen_stations, "station_name"].tolist()
-
-    # Prepare station data for ALL stations
+    # Prepare station data for ALL stations (matching Flask frontend expectation)
+    # In boston_transit_logic, update station_data creation:
     station_data = []
     chosen_station_names_set = set(chosen_station_names)  # Convert to set for O(1) lookup
     for i, row in df.iterrows():
@@ -265,6 +240,40 @@ def initialization(_nLayers, C_bar_init):
     obj_base = instance_nLY(s=s_init, alpha=alpha_init, beta=beta_init, theta=theta_init, cost=cost_init, gamma=gamma_init, C_bar=C_bar_init)
     return obj_base
 
+def get_all_locations_geojson(time_period):
+     df = pd.read_csv('./data/attractiveness_dhs.csv')
+ 
+     score_column = f"base_attractiveness_score_{time_period}"
+     if score_column not in df.columns:
+         raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
+     
+     features = []
+     for _, row in df.iterrows():
+         feature = {
+             "type": "Feature",
+             "geometry": {
+                 "type": "Point",
+                 "coordinates": [row["Lon"], row["Lat"]]  # GeoJSON expects [longitude, latitude]
+             },
+             "properties": {
+                 "station_name": row["station_name"],
+                 "attractiveness_score": row[score_column]
+             }
+         }
+         features.append(feature)
+     
+     geojson = {
+         "type": "FeatureCollection",
+         "features": features
+     }
+     
+     return geojson
+ 
+@app.route('/get_heatmap_data', methods=['GET'])
+def heatmap():
+    time_period = request.args.get("time_period", "")
+    return jsonify(get_all_locations_geojson(time_period))
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global obj2, metrics_data
@@ -359,15 +368,9 @@ def student_density():
     
 @app.route('/get_station_data')
 def get_station_data():
-    # Extract parameters from the URL
-    time_period = request.args.get('resource_type', '')  # Ensure this matches the URL parameter name
+    time_period = request.args.get('resource_type', '')
     C_bar_init = float(request.args.get('C_bar_init', 0))
     num_attacks = int(request.args.get('num_attacks', 0))
-
-    # Debugging: Print the extracted parameters
-    print(f"Extracted parameters - time_period: {time_period}, C_bar_init: {C_bar_init}, num_attacks: {num_attacks}")
-
-    # Run the logic and get station data
     station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
     return jsonify(station_data)
     

@@ -57,6 +57,11 @@
                                 value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
                         </div>
                     </div>
+                </br></br>
+                <div>
+                    <button id="toggleHeatmap" class="btn btn-primary" style="background-color: green;">Show Heatmap</button>
+                </div>
+                
                 </form>
             </div>
         </div>
@@ -72,7 +77,7 @@
                     <tr>
                         <th>Station Name</th>
                         <th>Defense Allocation</th>
-                        <th>Probability to Attack Station</th>
+                        <th>Attack Probability</th>
                     </tr>
                 </thead>
                 <tbody id="station-table-body">
@@ -150,6 +155,15 @@
                         updateMapAndTable(data);
                     })
                     .catch(error => console.error('Error:', error));
+
+                fetch(`/get_heatmap_data?time_period=${encodeURIComponent(timePeriod)}`)
+                    .then(response => response.json())
+                    .then(geojsonData => {
+                        if (map.getSource('heatmap-source')) {
+                            map.getSource('heatmap-source').setData(geojsonData);
+                        }
+                    })
+                    .catch(error => console.error('Error loading heatmap data:', error));
             });
 
 
@@ -197,12 +211,47 @@
                 if (station) {
                     popup.setLngLat(e.lngLat)
                         .setHTML(`<strong>${stationName}</strong>
-                            <br>Probability to Attack Station: ${station.attack_probability}
+                            <br>Attack Probability: ${station.attack_probability}
                             <br>Defense Allocation: ${station.defense_allocation}`)
                         .addTo(map);
                 }
             });
             map.on('mouseleave', 'metro-stations-layer', () => popup.remove());
+
+            map.addSource('heatmap-source', {
+                 type: 'geojson',
+                 data: `/get_heatmap_data?time_period=${document.getElementById('resourceType').value}`, // This endpoint should return GeoJSON data
+             });
+                 
+             map.addLayer({
+                 id: 'heatmap-layer',
+                 type: 'heatmap',
+                 source: 'heatmap-source',
+                 layout: { visibility: 'none' }, // Initially hidden
+                 paint: {
+                     'heatmap-weight': ['interpolate',
+                     ['linear'],
+                     ['get', 'attractiveness_score'],
+                     0, 0,
+                     0.2, 0.1,
+                     0.5, 0.4,
+                     1, 1],
+                     'heatmap-intensity': 1,
+                     'heatmap-color': [
+                         'interpolate',
+                         ['linear'],
+                         ['heatmap-density'],
+                         0, 'rgba(0,0,255,0)',
+                         0.1, 'blue',
+                         0.2, 'cyan',
+                         0.4, 'lime',
+                         0.6, 'yellow',
+                         1, 'red'
+                     ],
+                     'heatmap-radius': 30,
+                     'heatmap-opacity': 0.75
+                 }
+             });
         
         });   
 
@@ -256,6 +305,18 @@
                 });
             });
         });
+
+        document.getElementById('toggleHeatmap').addEventListener('click', function () {
+             let visibility = map.getLayoutProperty('heatmap-layer', 'visibility');
+             
+             if (visibility === 'none') {
+                 map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
+                 this.textContent = 'Hide Heatmap';
+             } else {
+                 map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
+                 this.textContent = 'Show Heatmap';
+             }
+         });
     </script>
     
 </body>
