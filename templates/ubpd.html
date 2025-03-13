@@ -82,10 +82,10 @@
         </div>
 
         <div id="heatmap-legend" class="legend" style="display: none">
-            <h6>Student Population:</h6>
-            <div><span style="background-color: #C7445D"></span>1000+</div>
-            <div><span style="background-color: #E07069"></span>801-1000</div>
-            <div><span style="background-color: #FF972D"></span>501-800</div>
+            <h6>Risk Level:</h6>
+            <div><span style="background-color: #C7445D"></span>2000+</div>
+            <div><span style="background-color: #E07069"></span>1001-2000</div>
+            <div><span style="background-color: #FF972D"></span>501-1000</div>
             <div><span style="background-color: #F0D55E"></span>301-500</div>
             <div><span style="background-color: #509BC7"></span>101-300</div>
             <div><span style="background-color: #4E6DBD"></span>51-100</div>
@@ -109,7 +109,7 @@
         // Marker and Distance Variables
         let currentMarkers = [];
         const coordinatesElement = document.getElementById('coordinates');
-        let buildingDistances = {}; // Store distances between markers and buildings
+        // let buildingDistances = {}; // Store distances between markers and buildings
 
         // Spawn button
         document.querySelector('.spawnMarker').addEventListener('click', function() {
@@ -131,15 +131,24 @@
                 const lngLat = marker.getLngLat();
                 coordinatesElement.style.display = 'block';
                 coordinatesElement.innerHTML = `Longitude: ${lngLat.lng.toFixed(5)}<br />Latitude: ${lngLat.lat.toFixed(5)}`;
-                calculateDistances(lngLat, markerId); 
+                // calculateDistances(lngLat, markerId); 
+                calculateClosestMarkerForBuildings();
+
+                if (heatmapVisible) addHeatmapLayer();
             });
 
             // Show coordinates and calculate distances initially
             const initialLngLat = marker.getLngLat();
             coordinatesElement.style.display = 'block';
             coordinatesElement.innerHTML = `Longitude: ${initialLngLat.lng.toFixed(5)}<br />Latitude: ${initialLngLat.lat.toFixed(5)}`;
-            calculateDistances(initialLngLat, markerId);
+            // calculateDistances(initialLngLat, markerId);
+            calculateClosestMarkerForBuildings();
+
+            if (heatmapVisible) addHeatmapLayer();
         });
+
+        /*
+        // Used for calculating distance but not in use rn, don't delete it yet :(
 
         // Calculate and store distances between marker and buildings
         function calculateDistances(markerLngLat, markerId) {
@@ -160,11 +169,46 @@
             // Optionally log the distances
             console.log(buildingDistances);
         }
+        */
+
+        let closestMarkers = {}; // Object to store closest markers and their distances
+
+        // Function to calculate distances between all markers and each building
+        function calculateClosestMarkerForBuildings() {
+            locations.forEach(location => {
+                const buildingCoords = location.coordinates; // [lat, lng]
+                let closestDistance = Infinity; // Initialize with a large number
+                let closestMarkerId = null; // To store the ID of the closest marker
+
+                currentMarkers.forEach(marker => {
+                    const markerLngLat = marker.getLngLat();
+                    const distance = turf.distance(
+                        turf.point([markerLngLat.lng, markerLngLat.lat]),
+                        turf.point([buildingCoords[1], buildingCoords[0]])
+                    );
+
+                    // Update closest marker if this distance is smaller
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestMarkerId = marker.markerId; // Assign closest marker's ID
+                    }
+                });
+
+                // Store the closest marker and its distance for the building
+                closestMarkers[location.title] = {
+                    closestMarkerId: closestMarkerId,
+                    distance: closestDistance
+                };
+            });
+
+            console.log(closestMarkers);
+        }
 
         // Clear button
         document.querySelector('.clearMarker').addEventListener('click', function() {
             currentMarkers.forEach(marker => marker.remove());
             currentMarkers = [];
+            closestMarkers = {};
             coordinatesElement.style.display = 'none';
         });
 
@@ -320,6 +364,9 @@
             document.getElementById("layer1_btn").className = layer === 1 ? "btn btn-primary" : "btn btn-secondary";
             document.getElementById("layer2_btn").className = layer === 2 ? "btn btn-primary" : "btn btn-secondary";
         }
+        </script>
+        
+        <script>
 
         // Maintain resource input syncing functions
         function syncSlider(id) {
@@ -346,7 +393,6 @@
             }
         }
 
-
         function toggleLayer(layerName) {
             var visibility = map.getLayoutProperty(layerName, 'visibility');
             if (visibility === 'visible') {
@@ -355,6 +401,10 @@
                 map.setLayoutProperty(layerName, 'visibility', 'visible');
             }
         }
+    
+    </script>
+    
+    <script>
 
         let studentDensityData = {};
         let currentTime = "8:00";; // Default hour
@@ -426,26 +476,36 @@
             let buildingFeatures = map.querySourceFeatures('buildings-heatmap', {
                 sourceLayer: 'ub_heatmap',
             });
-            
+
 
             let features = buildingFeatures.map(feature => {
-                let coordinates = feature.geometry.coordinates;
-                let count = rawData[feature.properties.id] || 0
+                let studentCount = rawData[feature.properties.id] || 0;
+                let buildingName = feature.properties.building;
+                let closestMarkerInfo = closestMarkers[buildingName];
+                let distance = closestMarkerInfo ? closestMarkerInfo.distance : Infinity;
+                let risk = 0;
+
+                if (distance !== Infinity && distance !== undefined) {
+                    risk = studentCount * distance;
+                }
 
                 return {
                     type: "Feature",
                     geometry: {
                         type: "Polygon",
-                        coordinates: coordinates
+                        coordinates: feature.geometry.coordinates // Ensure this is properly retrieved
                     },
                     properties: {
-                        count: count,
-                        building_name: feature.properties.building
+                        count: risk || 0, // Ensure count is a valid number
+                        building_name: buildingName || "Unknown",
+                        studentCount: studentCount || 0,
+                        distance: distance !== Infinity ? distance : 0
                     }
-                }
+                };
 
-                //console.log("geometry type:", buildingFeatures[0].geometry.type);
-                //console.log("geometry coordinates:", buildingFeatures[0].geometry.coordinates[0]);
+
+                console.log("geometry type:", buildingFeatures[0].geometry.type);
+                console.log("geometry coordinates:", buildingFeatures[0].geometry.coordinates[0]);
 
             }).filter(feature => feature !== null); // Remove null entries
 
@@ -472,7 +532,7 @@
                             ["linear"],
                             ["get", "count"],
                             0, 0,
-                            10, 1
+                            1000, 1
                         ],
                         "heatmap-intensity": 1,
                         "heatmap-color": [
@@ -509,13 +569,13 @@
                             ["linear"],
                             ["get", "count"],
                             0, "#FFFFFF",
-                            1, "#203A7C",
-                            50, "#4E6DBD",
-                            100, "#509BC7",
-                            300, "#F0D55E",
-                            500, "#FF972D",
-                            800, "#E07069",
-                            1000, "#C7445D"
+                            50, "#203A7C",
+                            100, "#4E6DBD",
+                            300, "#509BC7",
+                            500, "#F0D55E",
+                            1000, "#FF972D",
+                            2000, "#E07069",
+                            5000, "#C7445D"
                         ],
                     'fill-opacity': [
                         "case",
@@ -563,14 +623,26 @@
                 function addPopupEvent(layerName) {
                     map.on('mousemove', layerName, (e) => {
                         const properties = e.features[0].properties;
-                        const density = properties.count || 0;
+                        const density = properties.count || 0; // Ensure this is properly defined
                         const buildingName = properties.building_name || "Unknown Building";
+                        const studentCount = properties.studentCount || 0; // Ensure it exists
+                        const distance = properties.distance !== undefined ? properties.distance.toFixed(2) + " km" : "N/A";
+
+                        // Compute risk from properties
+                        const risk = properties.count || 0; // Risk is stored in "count"
+
                         const coordinates = e.lngLat;
                         
                         popup.setLngLat(coordinates)
-                        .setHTML(`<b>${buildingName}</b><br><b>Student Count:</b> ${density}`)
-                        .addTo(map);
+                            .setHTML(`
+                                <b>${buildingName}</b><br>
+                                <b>Risk:</b> ${risk.toFixed(2)}<br>
+                                <b>Students:</b> ${studentCount}<br>
+                                <b>Distance:</b> ${distance}
+                            `)
+                            .addTo(map);
                     });
+
                     
                     map.on('mouseleave', layerName, () => {
                         popup.remove();
@@ -588,11 +660,12 @@
                 });
             }
         }
+    </script>
+    
+    <script>
 
         function removeHeatmapLayer() {
-            if (map.getSource('heatmap')) {
-                map.removeSource('heatmap');
-            }
+            // Remove the layers first
             if (map.getLayer('heatmap-radial')) {
                 map.removeLayer('heatmap-radial');
             }
@@ -602,7 +675,12 @@
             if (map.getLayer('heatmap-buildings-labels')) {
                 map.removeLayer('heatmap-buildings-labels');
             }
+
+            if (map.getSource('heatmap')) {
+                map.removeSource('heatmap');
+            }
         }
+
 
         let heatmapVisible = false;
 
