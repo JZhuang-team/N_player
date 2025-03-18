@@ -564,6 +564,11 @@ def get_station_data():
     station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
     return jsonify(station_data)
 
+@app.route('/get_heatmap_data', methods=['GET'])
+def heatmap():
+     time_period = request.args.get("time_period", "")
+     return jsonify(get_all_locations_geojson(time_period))
+
 
 @app.route('/data/markers')
 def get_markers():
