@@ -839,8 +839,14 @@ const roads = {
                         // Use data.layers to decide how many columns to create
                         if (data.layers === 1) {
                             tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th></tr>';
-                        } else {
+                        } else if (data.layers === 2) {
                             tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th><th>Layer 2</th></tr>';
+                        } else if (data.layers === 3) {
+                            tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th><th>Layer 2</th><th>Layer 3</th></tr>';
+                        } else if (data.layers === 4) {
+                            tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th><th>Layer 2</th><th>Layer 3</th><th>Layer 4</th></tr>';
+                        } else if (data.layers === 5) {
+                            tableHead.innerHTML = '<tr><th>Parameter</th><th>Layer 1</th><th>Layer 2</th><th>Layer 3</th><th>Layer 4</th><th>Layer 5</th></tr>';
                         }
 
                         const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];

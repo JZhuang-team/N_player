@@ -40,6 +40,8 @@ body {
     width: 300px;
     padding: 20px;
     border-right: 1px solid #ddd;
+    max-height: 100vh; /* or any other fixed/max height you'd like */
+    overflow-y: auto;
 }
 /* Sidebar header */
 .sidebar h5 {
