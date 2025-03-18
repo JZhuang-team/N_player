@@ -347,10 +347,12 @@
             style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms', 
             center: [-78.787, 43],
         });
-        map.flyTo({ 
-            center: [-78.787, 43], 
-            zoom: 15 
-        });
+        setTimeout(() => {
+            map.flyTo({
+                center: [-78.787, 43],
+                zoom: 15,
+            });
+        }, 1000);
 
         function switchView(styleId) {
             var styleUrl = 'mapbox://styles/mapbox/' + styleId;

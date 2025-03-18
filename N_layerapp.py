@@ -377,7 +377,7 @@ def boston_transit_logic(C, A, time_period):
         station_name = row["station_name"]
         station_data.append({
             "station_name": station_name,
-            "defense_allocation": f"{d_optimal[i]:.3f} K/$",
+            "defense_allocation": f"{d_optimal[i]:.3f} K$",
             "attractiveness_score": v[i],
             "attack_probability": f"{a_optimal[i]*100:.2f}%",
             "defender_success_probability": f"{P_defender[i]*100:.2f}%",
