@@ -51,6 +51,14 @@
                         </div>
                         -->
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
+                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a building...">
+                        <div class="dropdown">
+                            <div class="dropdown-menu" id="locationDropdown" style="display: none; width: 100%; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
 
                     <!-- Total Layers slider -->
                     <div class="form-group">
@@ -59,15 +67,17 @@
                             <option value="">Select number of layers</option>
                             <option value="1">1 Layer</option>
                             <option value="2">2 Layers</option>
+                            <option value="3">3 Layers</option>
+                            <option value="4">4 Layers</option>
+                            <option value="5">5 Layers</option>
+
                         </select>
                         <input type="hidden" name="total_layers" id="total_layers" value="1">
                     </div>
                     
-                    
-
                     <div class="resource-type">
                         <label class="sidebarHeaders" for="resourceType">Resource Type:</label>
-                        <select class="form-control" id="resourceType" name="resource_type">
+                        <select class="form-control" id="resourceType" name="resource_type" multiple>
                             <option value="">Select a resource</option>
                             <option value="guards">Guards</option>
                             <option value="camera">Camera</option>
@@ -75,10 +85,28 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
-                        <input type="text" class="form-control" id="locationSearch" placeholder="Search for a building...">
-                        <div class="dropdown">
-                            <div class="dropdown-menu" id="locationDropdown" style="display: none; width: 100%; max-height: 200px; overflow-y: auto;"></div>
+                        <label class="sidebarHeaders" for="weekdaySelect">Weekday:</label>
+                        <select class="form-control" id="weekdaySelect" name="weekday">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <div id="time-slider-container-main" style="position:relative; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
+                        <label class="sidebarHeaders" for="time-slider-main">Time:</label>
+                        <input type="range" id="time-slider-main" name="time" min="8" max="22" step="0.25" value="8">
+                        <input type="hidden" id="hidden-time" name="time" value="8">
+                        <script>
+                            document.getElementById("time-slider-main").addEventListener("input", function () {
+                                document.getElementById("hidden-time").value = this.value;
+                            });
+                        </script>
+
+                        <span id="time-display-main">8:00</span>
                         </div>
                     </div>
 
@@ -92,7 +120,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="sidebarHeaders">Spawn Marker: </label>
+                        <label class="sidebarHeaders">Defensive Resource: </label>
                         <div>
                             <button type="button" class="btn btn-primary spawnMarker">Spawn</button>
                             <button type="button" class="btn btn-primary clearMarker">Clear</button>
@@ -101,7 +129,7 @@
 
                     <div class="form-group">
                         <label class="sidebarHeaders" for="attackTypes">Attack Types:</label>
-                        <select class="form-control" id="attackTypes" name="attack_type[]">
+                        <select class="form-control" id="attackTypes" name="attack_type[]" multiple>
                             <option value="">Select Attack Type</option>
                             <option value="Type1">Shooting</option>
                             <option value="Type2">Kidnapping</option>
@@ -184,6 +212,29 @@
         </div>
         
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const timeSlider = document.getElementById("time-slider-main");
+            const timeDisplay = document.getElementById("time-display-main");
+    
+            function updateTimeDisplay(value) {
+                let hours = Math.floor(value);
+                let minutes = (value % 1) * 60;
+                let formattedTime = `${hours}:${minutes === 0 ? '00' : minutes}`;
+                timeDisplay.textContent = formattedTime;
+            }
+    
+            // Initialize the display
+            updateTimeDisplay(timeSlider.value);
+    
+            // Listen for input changes
+            timeSlider.addEventListener("input", function () {
+                updateTimeDisplay(this.value);
+            });
+        });
+    </script>
+    
 
     <script>
         // Marker
@@ -341,7 +392,7 @@ const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
     center: [-78.786058, 43.001150],
-    zoom: 17.5
+    zoom: 16
 });
 
 document.addEventListener('DOMContentLoaded', function () {

@@ -1,155 +1,44 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response, send_file, current_app, abort
+from flask import Flask, render_template, request, jsonify, send_file
 from scipy.optimize import minimize
 import numpy as np
 import pandas as pd
 import copy
 import logging
 import os
+
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
 
-# Load the dataset
-file_path = "./data/attractiveness_dhs.csv"
-df = pd.read_csv(file_path)
+# Load datasets
+df_student = pd.read_csv("data/student_data.csv")   
+df_transit = pd.read_csv("data/attractiveness_dhs.csv")   
 
-# Constants
-λ = 1  # Given constant
+########################################################
+# 1) Risk Optimization Functions & Instance Class
+########################################################
 
-# Define the attack success probability function
-def attack_success_prob(d):
-    return np.exp(-λ * np.array(d))  # P_i(d_i) = e^(-λ d_i)
-
-def defender_success_prob(d):
-    return 1 - attack_success_prob(d)  # Defender's probability = 1 - Attacker's probability
-
-# Defender's optimization function (Minimization)
-def defender_objective(d, a, v):
-    P = attack_success_prob(d)
-    return sum(a[i] * P[i] * v[i] for i in range(len(v)))  # Minimize risk
-
-# Attacker's optimization function (Maximization)
-def attacker_objective(a, d, v):
-    P = attack_success_prob(d)
-    return -sum(a[i] * P[i] * v[i] for i in range(len(v)))  # Maximize attack success (negated for minimization solver)
-
-# Constraint for the defender: total budget must sum to C
-def budget_constraint(d, C):
-    return C - sum(d)
-
-# Constraint for the attacker: must select exactly A targets
-def attack_constraint(a, A):
-    return A - sum(a)  # Allow multiple attacks
-
-def boston_transit_logic(C, A, time_period):
-    # Get the appropriate attractiveness score column based on the time period
-    score_column = f"base_attractiveness_score_{time_period}"
-    if score_column not in df.columns:
-        raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
-
-    v = df[score_column].tolist()  # Attractiveness scores
-    n = len(v)  # Number of stations
-
-    # Initialize variables (matching notebook)
-    d_init = np.random.uniform(0, C / n, n)  # Initial defense spread
-    a_init = np.random.uniform(0, 1, n)      # Initial attack probabilities
-
-    # Bounds (matching notebook)
-    d_bounds = [(0, C / 5) for _ in range(n)]  # Defender: 0 to C/5 per station
-    a_bounds = [(0, 1) for _ in range(n)]      # Attacker: 0 to 1 per station
-
-    # Constraints (matching notebook)
-    d_constraints = {'type': 'eq', 'fun': lambda d: C - np.sum(d)}  # Budget constraint
-    a_constraints = {'type': 'eq', 'fun': lambda a: A - np.sum(a)}  # Attack constraint
-
-    # Defender optimization (matching notebook)
-    d_result = minimize(defender_objective, d_init, args=(a_init, v), method='SLSQP', 
-                        bounds=d_bounds, constraints=d_constraints)
-    d_optimal = d_result.x
-
-    # Attacker optimization (matching notebook)
-    a_result = minimize(attacker_objective, a_init, args=(d_optimal, v), method='SLSQP', 
-                        bounds=a_bounds, constraints=a_constraints)
-    a_optimal = a_result.x
-
-    # Compute defender success probability (matching notebook)
-    P_defender = defender_success_prob(d_optimal)
-
-    # Identify top A attacked stations (matching notebook)
-    chosen_stations = np.argsort(a_optimal)[-A:]  # Top A by attack probability
-    chosen_station_names = df.loc[chosen_stations, "station_name"].tolist()
-
-    # Prepare station data for ALL stations (matching Flask frontend expectation)
-    # In boston_transit_logic, update station_data creation:
-    station_data = []
-    chosen_station_names_set = set(chosen_station_names)  # Convert to set for O(1) lookup
-    for i, row in df.iterrows():
-        station_name = row["station_name"]
-        attack_prob = f"{a_optimal[i] * 100:.2f}%"
-        defend_prob = f"{P_defender[i] * 100:.2f}%"
-        defense_alloc = f"{d_optimal[i]:.3f} K/$"
-        is_attacked = station_name in chosen_station_names_set  # Explicit flag
-
-        station_data.append({
-            "station_name": station_name,
-            "attack_probability": attack_prob,
-            "defend_probability": defend_prob,
-            "defense_allocation": defense_alloc,
-            "is_attacked": is_attacked  # New field
-        })
-
-    # Debugging output (optional, preserved from Flask)
-    print("\nAttacked Stations (Top A by Probability):")
-    print("=" * 50)
-    for station in chosen_station_names:
-        idx = chosen_station_names.index(station)
-        station_idx = chosen_stations[idx]
-        print(f"Station Name: {station}")
-        print(f"  - Defense Allocation: {d_optimal[station_idx]:.3f} K/$")
-        print(f"  - Attack Probability: {a_optimal[station_idx] * 100:.2f}%")
-        print(f"  - Defender Success Probability: {P_defender[station_idx] * 100:.2f}%")
-        print("-" * 50)
-
-    return station_data
-
-@app.route('/bostonMap', methods=['GET', 'POST'])
-def boston_map():
-    # Initialize default values
-    time_period = ""
-    C_bar_init = 0
-    num_attacks = 0
-    station_data = []  # Initialize station_data as an empty list
-
-    if request.method == 'POST':
-        # Get form data
-        time_period = request.form.get("resource_type", "")
-        C_bar_init = float(request.form.get("C_bar_init", 0))
-        num_attacks = int(request.form.get("num_attacks", 0))
-
-        # Run the logic and get station data
-        station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
-
-    # Render the template with the data
-    return render_template(
-        'bostonMap.html',
-        resource_type=time_period,
-        C_bar_init=C_bar_init,
-        num_attacks=num_attacks,
-        station_data=station_data  # Always pass station_data, even if empty
-    )
-
-
-# Initialization functions
 class instance_nLY:
-    def __init__(self, s=[], beta=[], alpha=[], theta=[], gamma=[], cost=[], C_bar=[]):
+    def __init__(self, s, beta, alpha, theta, gamma, cost, C_bar):
+        """
+        s      : 2D list of consequence values, shape = (nLayers, aTypes)
+        beta   : 2D list of threat values, shape = (nLayers, aTypes)
+        alpha  : 2D list of vulnerability values, shape = (nLayers, aTypes)
+        theta  : 2D list of resource effectiveness factors, shape = (nLayers, mFactors)
+        gamma  : 2D list, shape = (nLayers, nLayers)
+        cost   : 2D list, shape = (nLayers, mFactors); cost[i][j] is the cost for resource j at layer i
+        C_bar  : scalar, total resource budget
+        """
         self.s = s
         self.beta = beta
         self.alpha = alpha
         self.theta = theta
         self.gamma = gamma
-        self.cost = cost
+        self.cost_2d = cost 
         self.C_bar = C_bar
 
-        # 添加计算 raw_risk 的属性
-        self.raw_risk = [_s * _beta * _alpha for _s, _beta, _alpha in zip(s, beta, alpha)]
+        self.nLayers = len(s)
+        self.aTypes = len(s[0]) if self.nLayers > 0 else 0
+        self.mFactors = len(theta[0]) if self.nLayers > 0 else 0
 
     def print_values(self):
         print("s =", self.s)
@@ -157,195 +46,488 @@ class instance_nLY:
         print("alpha =", self.alpha)
         print("theta =", self.theta)
         print("gamma =", self.gamma)
-        print("cost =", self.cost)
+        print("cost =", self.cost_2d)
         print("C_bar =", self.C_bar)
 
-def flatten_list(_2d_list):
-    flat_list = []
-    for element in _2d_list:
-        if type(element) is list:
-            for item in element:
-                flat_list.append(item)
-        else:
-            flat_list.append(element)
-    return flat_list
 
-def objective_prob(Y, _nLayers):
-    global obj2
-    f = [None] * _nLayers
-    for i in range(len(f)):
-        f[i] = np.exp(-1 * sum([obj2.gamma[i - k] * obj2.theta[k] * Y[k] for k in range(i + 1)]))  # vulnerability
-    raw_risk = obj2.raw_risk  # 使用预先计算的 raw_risk
-    return sum(a * b for a, b in zip(raw_risk, f))
+def compute_layer_risk(Y_2d, obj):
+    """
+    Computes the risk at each layer and attack type:
+      risk[i][a] = s[i][a]*beta[i][a]*alpha[i][a]*exp(-exponent_term(i)),
+    where exponent_term(i) = sum_{k=0}^{i} sum_{j=0}^{mFactors-1} gamma[k][i]*theta[k][j]*Y_2d[k][j].
+    """
+    nLayers = obj.nLayers
+    aTypes = obj.aTypes
+    mFactors = obj.mFactors
 
-def constraint(Y, obj2):
-    return obj2.C_bar - sum(a * b for a, b in zip(obj2.cost, Y))
+    risk_2d = []
+    for i in range(nLayers):
+        exponent_i = 0.0
+        for k in range(i + 1):
+            for j in range(mFactors):
+                exponent_i += obj.gamma[k][i] * obj.theta[k][j] * Y_2d[k][j]
+        row_risk = []
+        for a in range(aTypes):
+            val = obj.s[i][a] * obj.beta[i][a] * obj.alpha[i][a] * np.exp(-exponent_i)
+            row_risk.append(val)
+        risk_2d.append(row_risk)
+    return risk_2d
 
-def compute_f(Y, _nLayers):
-    global obj2
-    f = [None] * _nLayers
-    for i in range(len(f)):
-        f[i] = np.exp(-1 * sum([obj2.gamma[i - k] * obj2.theta[k] * Y[k] for k in range(i + 1)]))
-    return f
 
-def compute_raw_risk():
-    global obj2
-    return obj2.raw_risk
+def sum_risk(risk_2d):
+    """
+    Sums risk by layer and returns both the per-layer sums and the total risk.
+    """
+    layer_sums = [sum(row) for row in risk_2d]
+    total_risk = sum(layer_sums)
+    return layer_sums, total_risk
 
-def compute_risk_contributions(raw_risk, f_values):
-    # 计算每一层的风险贡献：raw_risk[i] * f[i]
-    risk_contributions = [round(a * b, 4) for a, b in zip(raw_risk, f_values)]
-    total_risk = round(sum(risk_contributions), 4)
-    return risk_contributions, total_risk
 
-def get_numerical_sol(init_val, _nLayers, obj2):
-    Y0 = init_val
-    b = (0.0, None)
-    bnds = (b,) * _nLayers
-    con1 = {'type': 'eq', 'fun': lambda Y: constraint(Y, obj2)}
-    cons = ([con1])
-    solution = minimize(lambda Y: objective_prob(Y, _nLayers), Y0, method='SLSQP', bounds=bnds, constraints=cons)
-    x = solution.x
-    x = [round(i, 2) for i in x]
-    f_values = compute_f(x, _nLayers)  # 计算 f[i] 值
-    f_values = [round(f, 4) for f in f_values]  # 对 f[i] 进行四舍五入，方便显示
-    raw_risk = compute_raw_risk()  # 计算 raw_risk
-    risk_contributions, total_risk = compute_risk_contributions(raw_risk, f_values)
-    obj_value = total_risk  # objective value 就是 total_risk
-    return flatten_list([obj_value, x]), f_values, risk_contributions, total_risk
+def objective_prob(Y_flat, obj):
+    """
+    Returns the total risk (objective) given a flattened Y vector.
+    """
+    nLayers = obj.nLayers
+    mFactors = obj.mFactors
 
-def addRow(df, ls):
-    numEl = len(ls)
-    newRow = pd.DataFrame(np.array(ls).reshape(1, numEl), columns=list(df.columns))
-    df = pd.concat([df, newRow], ignore_index=True)
-    return df
+    Y_2d = np.array(Y_flat).reshape(nLayers, mFactors)
+    risk_2d = compute_layer_risk(Y_2d, obj)
+    _, total_risk = sum_risk(risk_2d)
+    return total_risk
 
-def get_full_sol(_nLayers, obj2, vars_col):
-    intial_sol = [3] * _nLayers
-    solutions, f_values, risk_contributions, total_risk = get_numerical_sol(intial_sol, _nLayers, obj2)
-    required_length = len(vars_col)
-    while len(solutions) < required_length:
-        solutions.append(0)
-    solutions = solutions[:required_length]
-    return solutions, f_values, risk_contributions, total_risk
 
-def initialization(_nLayers, C_bar_init):
-    gam = 0.5
-    s_init = [500 for i in range(1, _nLayers+1)]
-    alpha_init = [0.5] * _nLayers
-    beta_init = [1 / _nLayers] * _nLayers
-    theta_init = [0.04] * _nLayers
-    cost_init = [1 for i in range(1, _nLayers+1)]
-    gamma_init = [1] + [gam**i for i in range(1, _nLayers)]
-    obj_base = instance_nLY(s=s_init, alpha=alpha_init, beta=beta_init, theta=theta_init, cost=cost_init, gamma=gamma_init, C_bar=C_bar_init)
-    return obj_base
+def grad_objective(Y_flat, obj):
+    """
+    Computes the gradient of the objective function.
+    """
+    nLayers = obj.nLayers
+    mFactors = obj.mFactors
+    aTypes = obj.aTypes
+
+    Y_2d = np.array(Y_flat).reshape(nLayers, mFactors)
+    risk_2d = compute_layer_risk(Y_2d, obj)
+
+    grad = np.zeros((nLayers, mFactors))
+    for p in range(nLayers):
+        for q in range(mFactors):
+            deriv_pq = 0.0
+            for i in range(p, nLayers):
+                for a in range(aTypes):
+                    deriv_pq += -risk_2d[i][a] * obj.gamma[p][i] * obj.theta[p][q]
+            grad[p, q] = deriv_pq
+    return grad.flatten()
+
+
+def cost_constraint(Y_flat, obj):
+    """
+    Computes the cost constraint: total_cost should equal C_bar.
+    Returns C_bar - total_cost.
+    """
+    nLayers = obj.nLayers
+    mFactors = obj.mFactors
+
+    Y_2d = np.array(Y_flat).reshape(nLayers, mFactors)
+
+    total_cost = 0.0
+    for i in range(nLayers):
+        for j in range(mFactors):
+            total_cost += obj.cost_2d[i][j] * Y_2d[i][j]
+
+    return obj.C_bar - total_cost
+
+
+def grad_cost_constraint(Y_flat, obj):
+    """
+    Computes the gradient of the cost constraint.
+    """
+    nLayers = obj.nLayers
+    mFactors = obj.mFactors
+
+    grad = np.zeros((nLayers, mFactors))
+    for p in range(nLayers):
+        for q in range(mFactors):
+            grad[p, q] = -obj.cost_2d[p][q]
+    return grad.flatten()
+
+
+def compute_vulnerability_matrix(obj, Y_2d, selected_attacks, selected_resource):
+    """
+    Computes a 3D vulnerability matrix for all layers (i), selected attack types, and selected resource types.
+
+    Parameters:
+      obj (instance_nLY): The instance containing system parameters.
+      Y_2d (numpy array): A 2D array of investments Y[i][j].
+      selected_attacks (list): List of attack type indices (as defined externally).
+      selected_resource (list): List of resource type indices (as defined externally).
+
+    Returns:
+      numpy array: A 3D array of shape (nLayers, len(selected_attacks), len(selected_resource))
+                   containing vulnerability values.
+    """
+    nLayers = obj.nLayers
+    vulnerability_matrix = np.zeros((nLayers, len(selected_attacks), len(selected_resource)))
+    print("nLayers:", nLayers)
+    print("selected_attacks:", selected_attacks)
+    print("selected_resource:", selected_resource)
+
+    # Compute vulnerability for each combination of layer, selected attack, and selected resource
+    for i in range(nLayers):
+        for a in range(len(selected_attacks)):
+            for j in range(len(selected_resource)):
+                summation_term = sum(obj.gamma[k][i] * obj.theta[k][j] * Y_2d[k][j] for k in range(i + 1))
+                vulnerability_matrix[i, a, j] = np.round(obj.alpha[i][a] * np.exp(-summation_term), 3)
+
+    return vulnerability_matrix
+
+
+
+def get_numerical_sol(Y_init, obj):
+    """
+    Uses the SLSQP solver to find the optimal Y.
+    """
+    bnds = [(0.0, None)] * (obj.nLayers * obj.mFactors)
+
+    con = {
+        'type': 'eq',
+        'fun': lambda x: cost_constraint(x, obj),
+        'jac': lambda x: grad_cost_constraint(x, obj)
+    }
+
+    result = minimize(
+        fun=lambda x: objective_prob(x, obj),
+        x0=Y_init,
+        method='SLSQP',
+        jac=lambda x: grad_objective(x, obj),
+        bounds=bnds,
+        constraints=[con],
+        options={'ftol': 1e-9, 'eps': 1e-9, 'maxiter': 1000}
+    )
+    return result
+
+
+def get_full_sol(obj):
+    """
+    Provides an all-ones initial guess, solves the problem, and returns the solution.
+    """
+    nLayers = obj.nLayers
+    mFactors = obj.mFactors
+    Y_init = [1.0] * (nLayers * mFactors)
+    return get_numerical_sol(Y_init, obj)
+
+
+def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C_bar, building_name, time_value, weekday_value):
+    """
+    Initializes the model instance using selected attack/resource indices.
+    
+    Parameters:
+      - nLayers: number of layers (int)
+      - selected_attack_types: list of attack type indices (e.g., [0, 2])
+      - selected_resource_types: list of resource type indices (e.g., [1])
+      - C_bar: total resource budget (float)
+      - building_name: name of the building (str)
+      - time_value: time string (e.g., '8:00')
+      - weekday_value: weekday string (e.g., 'Monday')
+    """
+    def get_student_count(building, time_val, weekday_val):
+        filtered = df_student[
+            (df_student['Building'] == building) &
+            (df_student['Time'] == time_val) &
+            (df_student['Weekday'] == weekday_val)
+        ]
+        return int(filtered['Student_Count_Building'].iloc[0]) if not filtered.empty else 0
+
+    final_count = get_student_count(building_name, time_value, weekday_value)
+    print(f"The student number for {building_name} at {time_value} on {weekday_value} is: {final_count}")
+
+    base_s = [
+        [10, 15, 20, 25, 30],
+        [12, 18, 24, 30, 36],
+        [14, 21, 28, 35, 42],
+        [16, 24, 32, 40, 48],
+        [18, 27, 36, 45, 54]
+    ]
+    s_2d = [[final_count * val for val in row] for row in base_s]
+    s_2d = [row[:] for row in s_2d[:nLayers]] 
+    s_2d = [[row[a] for a in selected_attack_types] for row in s_2d]
+
+    print("s_2d =")
+    for row in s_2d:
+        print(" ", row)
+
+    base_beta = [
+        [0.2, 0.3, 0.4, 0.5, 0.6],
+        [0.25, 0.35, 0.45, 0.55, 0.65],
+        [0.3, 0.4, 0.5, 0.6, 0.7],
+        [0.35, 0.45, 0.55, 0.65, 0.75],
+        [0.4, 0.5, 0.6, 0.7, 0.8]
+    ]
+    beta_2d = [row[:] for row in base_beta[:nLayers]]
+    beta_2d = [[row[a] for a in selected_attack_types] for row in beta_2d]
+
+    base_alpha = [
+        [0.9, 0.8, 0.7, 0.6, 0.5],
+        [0.6, 0.7, 0.8, 0.9, 0.4],
+        [0.5, 0.5, 0.6, 0.7, 0.8],
+        [0.8, 0.5, 0.7, 0.5, 0.5],
+        [0.4, 0.6, 0.7, 0.8, 0.9]
+    ]
+    alpha_2d = [row[:] for row in base_alpha[:nLayers]]
+    alpha_2d = [[row[a] for a in selected_attack_types] for row in alpha_2d]
+
+    base_gamma = [
+        [1.0,  0.9,  0.5,  0.5, 0.8],
+        [0.92, 1.0,  0.6,  0.3, 0.7],
+        [0.91, 0.92, 1.0,  0.6, 0.4],
+        [0.45, 0.38, 0.63, 1.0, 0.93],
+        [0.51, 0.82, 0.79, 0.66, 1.0]
+    ]
+    gamma_2d = [row[:nLayers] for row in base_gamma[:nLayers]]
+
+    base_theta = [
+        [0.94, 0.92],
+        [0.71, 0.93],
+        [0.92, 0.62],
+        [0.54, 0.65],
+        [0.98, 0.32]
+    ]
+    theta_2d = [[row[r] for r in selected_resource_types] for row in base_theta[:nLayers]]
+
+    cost_2d = [
+        [2.94, 2.92],
+        [2.71, 2.93],
+        [2.92, 2.62],
+        [2.54, 2.65],
+        [2.98, 2.32]
+    ]
+    cost_2d = [[row[r] for r in selected_resource_types] for row in cost_2d[:nLayers]]
+
+    return instance_nLY(s_2d, beta_2d, alpha_2d, theta_2d, gamma_2d, cost_2d, C_bar)
+
+
+########################################################
+# 2) Boston Transit Logic Functions
+########################################################
+
+λ = 1 
+
+def attack_success_prob(d):
+    return np.exp(-λ * np.array(d))
+
+def defender_success_prob(d):
+    return 1 - attack_success_prob(d)
+
+def defender_objective(d, a, v):
+    P = attack_success_prob(d)
+    return sum(a[i] * P[i] * v[i] for i in range(len(v)))
+
+def attacker_objective(a, d, v):
+    P = attack_success_prob(d)
+    return -sum(a[i] * P[i] * v[i] for i in range(len(v)))
+
+def budget_constraint_defender(d, C):
+    return C - sum(d)
+
+def attack_constraint(a, A):
+    return A - sum(a)
+
+def boston_transit_logic(C, A, time_period):
+    score_column = f"base_attractiveness_score_{time_period}"
+    if score_column not in df_transit.columns:
+        raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
+
+    v = df_transit[score_column].tolist()
+    n = len(v)
+
+    # Uniform initializations as in the notebook
+    d_init = np.full(n, C / n)
+    a_init = np.full(n, A / n)
+
+    # Adjusted bounds
+    d_bounds = [(0, C / 5) for _ in range(n)]
+    a_bounds = [(0, 1) for _ in range(n)]
+
+    # Constraints for defender and attacker
+    d_constraints = {'type': 'eq', 'fun': lambda d: C - np.sum(d)}
+    a_constraints = {'type': 'eq', 'fun': lambda a: A - np.sum(a)}
+
+    # Defender optimization
+    d_result = minimize(defender_objective, d_init, args=(a_init, v),
+                        method='SLSQP', bounds=d_bounds, constraints=d_constraints,
+                        options={'ftol': 1e-9})
+    d_optimal = np.round(d_result.x, decimals=6)
+
+    # Attacker optimization
+    a_result = minimize(attacker_objective, a_init, args=(d_optimal, v),
+                        method='SLSQP', bounds=a_bounds, constraints=a_constraints,
+                        options={'ftol': 1e-9})
+    a_optimal = np.round(a_result.x, decimals=6)
+
+    # Normalize attack probabilities to sum to A
+    a_optimal = a_optimal / np.sum(a_optimal) * A
+    a_optimal = np.round(a_optimal, decimals=4)
+
+    P_defender = np.round(defender_success_prob(d_optimal), decimals=6)
+
+    # Identify attacked stations by selecting the top A stations by attack probability
+    chosen_stations = np.argsort(a_optimal)[-A:]
+    chosen_station_names_set = set(df_transit.loc[chosen_stations, "station_name"].tolist())
+
+    station_data = []
+    for i, row in df_transit.iterrows():
+        station_name = row["station_name"]
+        station_data.append({
+            "station_name": station_name,
+            "defense_allocation": f"{d_optimal[i]:.3f} K/$",
+            "attractiveness_score": v[i],
+            "attack_probability": f"{a_optimal[i]*100:.2f}%",
+            "defender_success_probability": f"{P_defender[i]*100:.2f}%",
+            "is_attacked": station_name in chosen_station_names_set
+        })
+
+    # Optional: Print attacked stations for debugging
+    print("\nAttacked Stations (Top A by Probability) for time_period =", time_period)
+    for idx in chosen_stations:
+        print(f"Station Name: {df_transit.loc[idx, 'station_name']}")
+        print(f"  - Defense Allocation: {d_optimal[idx]:.3f}")
+        print(f"  - Attack Probability: {a_optimal[idx]*100:.2f}%")
+        print(f"  - Defender Success Probability: {P_defender[idx]*100:.2f}%")
+        print("-" * 50)
+
+    return station_data
+
 
 def get_all_locations_geojson(time_period):
-     df = pd.read_csv('./data/attractiveness_dhs.csv')
- 
-     score_column = f"base_attractiveness_score_{time_period}"
-     if score_column not in df.columns:
-         raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
-     
-     features = []
-     for _, row in df.iterrows():
-         feature = {
-             "type": "Feature",
-             "geometry": {
-                 "type": "Point",
-                 "coordinates": [row["Lon"], row["Lat"]]  # GeoJSON expects [longitude, latitude]
-             },
-             "properties": {
-                 "station_name": row["station_name"],
-                 "attractiveness_score": row[score_column]
-             }
-         }
-         features.append(feature)
-     
-     geojson = {
-         "type": "FeatureCollection",
-         "features": features
-     }
-     
-     return geojson
- 
-@app.route('/get_heatmap_data', methods=['GET'])
-def heatmap():
-    time_period = request.args.get("time_period", "")
-    return jsonify(get_all_locations_geojson(time_period))
+    score_column = f"base_attractiveness_score_{time_period}"
+    if score_column not in df_transit.columns:
+        raise ValueError(f"Invalid time period: {time_period}. Column not found in the dataset.")
+    
+    features = []
+    for _, row in df_transit.iterrows():
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [row["Lon"], row["Lat"]]
+            },
+            "properties": {
+                "station_name": row["station_name"],
+                "attractiveness_score": row[score_column]
+            }
+        }
+        features.append(feature)
+    
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+    return geojson
+
+########################################################
+# 3) Flask Routes
+########################################################
+
+# Global dictionary to store metrics for API access
+metrics_data = {}
+
+@app.route('/bostonMap', methods=['GET', 'POST'])
+def boston_map():
+    time_period = ""
+    C_bar_init = 0
+    num_attacks = 0
+    station_data = [] 
+
+    if request.method == 'POST':
+        time_period = request.form.get("resource_type", "")
+        C_bar_init = float(request.form.get("C_bar_init", 0))
+        num_attacks = int(request.form.get("num_attacks", 0))
+        station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
+
+    return render_template(
+        'bostonMap.html',
+        resource_type=time_period,
+        C_bar_init=C_bar_init,
+        num_attacks=num_attacks,
+        station_data=station_data
+    )
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global obj2, metrics_data
-
+    global metrics_data
     if request.method == 'POST':
         total_layers = int(request.form.get('total_layers'))
+        rss_type = request.form.getlist('resource_type')  # Multi-selection
+        attack_types = request.form.getlist('attack_type[]')  # Multi-selection
         C_bar_init = float(request.form.get('C_bar_init'))
 
-        app.logger.info(f"Total Layers: {total_layers}")
-        app.logger.info(f"C_bar_init: {C_bar_init}")
+        # Map to indices instead of counts
+        resource_mapping = {"guards": 0, "camera": 1}
+        attack_mapping = {
+            "Type1": 0, "Type2": 1, "Type3": 2, 
+            "Type4": 3, "Type5": 4
+        }
 
-        vars_col = ['obj_value'] + ['y' + str(i+1) for i in range(total_layers)]
+        # Get indices for selected types
+        selected_resource = [resource_mapping[rt] for rt in rss_type]
+        selected_attacks = [attack_mapping[atk] for atk in attack_types]
 
-        solution_df = pd.DataFrame(columns=vars_col)
+        # Get additional parameters
+        building_name = request.form.get('selected_building', 'Hoch')
 
-        layer_image = None
-        if total_layers in [1, 2, 3, 4]:
-            layer_image = f"layer{total_layers}.png"
+        curTime = float(request.form.get('time', 8)) 
+        time_value = f"{int(curTime)}:{int((curTime % 1) * 60):02d}"
 
-        final_solutions = None
-        final_f_values = None
-        final_risk_contributions = None
-        total_risk = None
+        weekday_value = request.form.get('weekday')
 
-        for i in range(total_layers):
-            _nLayers = i + 1
-            obj_base = initialization(_nLayers, C_bar_init)
-            obj2 = copy.deepcopy(obj_base)
-            solutions, f_values, risk_contributions, total_risk = get_full_sol(_nLayers, obj2, vars_col)
-            solution_df = addRow(solution_df, solutions)
-            if i == total_layers - 1:
-                final_solutions = solutions
-                final_f_values = f_values
-                final_risk_contributions = risk_contributions
+        app.logger.info(f"Selected Resources: {selected_resource}")
+        app.logger.info(f"Selected Attacks: {selected_attacks}")
 
-        solution_df["Layers"] = [i for i in range(1, total_layers+1)] 
+        # Build instance with specific types
+        obj_base = initialization_3d(
+            total_layers, 
+            selected_attacks, 
+            selected_resource, 
+            C_bar_init, 
+            building_name, 
+            time_value, 
+            weekday_value
+        )
+        
+        # Solve
+        sol = get_full_sol(obj_base)
+        Y_opt_2d = np.array(sol.x).reshape(obj_base.nLayers, obj_base.mFactors)
+        risk_2d = compute_layer_risk(Y_opt_2d, obj_base)
+        layer_sums, total_risk = sum_risk(risk_2d)
+        investments = np.round(Y_opt_2d, 2).tolist()
+        inv = [sum(row) for row in investments] 
 
-        # 提取最终的投资方案
-        investments = [final_solutions[i+1] for i in range(total_layers)]  # final_solutions[0] 是 obj_value
-        print(total_layers,investments,final_risk_contributions,final_f_values,obj2.s,obj2.beta)
-        # Store the calculated data in the global `metrics_data` dictionary
+        # Calculate consequence 
+        consequence = [sum(row) for row in obj_base.s] 
+        # Calculate threat 
+        threat = [sum(row) for row in obj_base.beta]
+        # Calculate vulnerability
+        # In your index route after solving the model:
+        vulnerability_matrix = compute_vulnerability_matrix(obj_base, Y_opt_2d, selected_attacks, selected_resource)
+        print("The vulnerability matrix is: " + str(vulnerability_matrix))
+        vulnerability = []
+        for layer in vulnerability_matrix:
+            layer_sum = 0
+            for value in layer.flatten():
+                layer_sum += value
+            vulnerability.append(layer_sum)
+
+
         metrics_data = {
             "layers": total_layers,
-            "investment": investments,
-            "risk": final_risk_contributions,
-            "vulnerability": final_f_values,
-            "consequence": obj2.s,
-            "threat": obj2.beta
+            "investment": inv,
+            "risk": layer_sums,
+            "total_risk": total_risk,
+            "consequence": consequence,
+            "vulnerability": vulnerability,  
+            "threat": threat
         }
-        return render_template(
-            'index.html',
-            total_layers=total_layers,
-            C_bar_init=C_bar_init,
-            solutions=investments,#investiment
-            objective_value=total_risk,  
-            vulnerability=final_f_values,  # vulnerability
-            risk=final_risk_contributions,  # risk
-            consequence=obj2.s, #consequence
-            threat=obj2.beta, #threat
-            alpha=obj2.alpha,
-            theta=obj2.theta,
-            gamma=obj2.gamma,
-            cost=obj2.cost,
-            C_bar=obj2.C_bar,
-            layer_image=layer_image,
-            )
+        return render_template('index.html', **metrics_data)
 
     return render_template('home.html')
-
-@app.route('/ubpd')
-def ubpd():
-    return render_template('ubpd.html')
 
 
 @app.route('/api/metrics')
@@ -353,19 +535,27 @@ def get_metrics():
     return jsonify(metrics_data)
 
 
+
+@app.route('/ubpd')
+def ubpd():
+    return render_template('ubpd.html')
+
+
 @app.route('/results', methods=['POST'])
 def results():
     return index()
 
+
 @app.route('/api/student-density')
 def student_density():
     try:
-        df = pd.read_csv('data/student_data.csv')
-        json_data = df.to_dict(orient='records')
+        df_sd = pd.read_csv('data/student_data.csv')
+        json_data = df_sd.to_dict(orient='records')
         return jsonify(json_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+
 @app.route('/get_station_data')
 def get_station_data():
     time_period = request.args.get('resource_type', '')
@@ -373,11 +563,13 @@ def get_station_data():
     num_attacks = int(request.args.get('num_attacks', 0))
     station_data = boston_transit_logic(C=C_bar_init, A=num_attacks, time_period=time_period)
     return jsonify(station_data)
-    
+
+
 @app.route('/data/markers')
 def get_markers():
     file_path = 'data/markers.json'
     return send_file(file_path)
+
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=8080)
