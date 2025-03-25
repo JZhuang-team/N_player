@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 from scipy.optimize import minimize
 import numpy as np
 import pandas as pd
@@ -384,7 +384,6 @@ def boston_transit_logic(C, A, time_period):
             "is_attacked": station_name in chosen_station_names_set
         })
 
-    # Optional: Print attacked stations for debugging
     print("\nAttacked Stations (Top A by Probability) for time_period =", time_period)
     for idx in chosen_stations:
         print(f"Station Name: {df_transit.loc[idx, 'station_name']}")
@@ -450,9 +449,20 @@ def boston_map():
         station_data=station_data
     )
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
+@app.route('/api/metrics')
+def get_metrics():
+    return jsonify(metrics_data)
+
+
+@app.route('/ubpd')
+def ubpd():
+    return render_template('ubpd.html')
+
+
+@app.route('/results', methods=['POST'])
+def results():
     global metrics_data
+
     if request.method == 'POST':
         total_layers = int(request.form.get('total_layers'))
         rss_type = request.form.getlist('resource_type')  # Multi-selection
@@ -505,7 +515,6 @@ def index():
         # Calculate threat 
         threat = [sum(row) for row in obj_base.beta]
         # Calculate vulnerability
-        # In your index route after solving the model:
         vulnerability_matrix = compute_vulnerability_matrix(obj_base, Y_opt_2d, selected_attacks, selected_resource)
         print("The vulnerability matrix is: " + str(vulnerability_matrix))
         vulnerability = []
@@ -527,24 +536,17 @@ def index():
         }
         return render_template('index.html', **metrics_data)
 
-    return render_template('home.html')
-
-
-@app.route('/api/metrics')
-def get_metrics():
-    return jsonify(metrics_data)
-
-
-
-@app.route('/ubpd')
-def ubpd():
-    return render_template('ubpd.html')
-
-
-@app.route('/results', methods=['POST'])
-def results():
-    return index()
-
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify(metrics_data)
+    else:
+        return render_template('index.html', **metrics_data)
+    
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'GET':
+        return render_template('home.html')
+    else:
+        return redirect(url_for('results'))
 
 @app.route('/api/student-density')
 def student_density():

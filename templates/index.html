@@ -7,8 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+
     <!-- Link to Bootstrap for layout and styling -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
     <!-- Link to Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -16,11 +18,11 @@
 
     <!-- Geocoder -->
     <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-    <link
-      href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
-      rel="stylesheet"
-    />
+    <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
 
+    <!-- Layers -->
+    <script src="https://api.mapbox.com/mapbox-assembly/v1.3.0/assembly.js"></script>
+    
 </head>
 <body>
 
@@ -63,9 +65,9 @@
                     <!-- Total Layers slider -->
                     <div class="form-group">
                         <label for="total_layers_select" class="sidebarHeaders">Number of Layers:</label>
-                        <select class="form-control" id="total_layers_select" name="total_layers_select" onchange="setLayer(this.value)">
+                        <select class="form-control" id="total_layers_select" name="total_layers_select">
                             <option value="">Select number of layers</option>
-                            <option value="1">1 Layer</option>
+                            <option value="1" selected>1 Layer</option>
                             <option value="2">2 Layers</option>
                             <option value="3">3 Layers</option>
                             <option value="4">4 Layers</option>
@@ -395,10 +397,19 @@ const map = new mapboxgl.Map({
     zoom: 16
 });
 
+// Isochrone Configuration
+const isoBaseUrl = 'https://api.mapbox.com/isochrone/v1/mapbox/walking/';
+    const isoDurations = [1, 2, 3, 4, 5];
+    const isoColor = ['#5a3fc0', '#3f6cbf', '#2ca6c4', '#2fcb9b', '#a4e35c'];
+    const isoMarker = new mapboxgl.Marker({ color: "#314ccd" })
+        .setLngLat([-78.786182985, 43.001148178])
+        .addTo(map);
+
 document.addEventListener('DOMContentLoaded', function () {
     map.on('load', function () {
         addMapLayersAndSources();
         updateLayerVisibility();
+        updateIsochrones();
 
         const savedValue = localStorage.getItem('C_bar_init');
         if (savedValue !== null) {
@@ -474,7 +485,55 @@ document.addEventListener('DOMContentLoaded', function () {
         map.on('mouseleave', 'building-layer', function () { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'road-layer', function () { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'road-layer', function () { map.getCanvas().style.cursor = ''; });
+
+        // Add Isochrone sources and layers
+        for (let i = 0; i < 5; i++) {
+            const sourceId = `iso-${i}`;
+            if (!map.getSource(sourceId)) {
+                map.addSource(sourceId, {
+                    type: 'geojson',
+                    data: { type: 'FeatureCollection', features: [] }
+                });
+
+                map.addLayer({
+                    id: `isoLayer-${i}`,
+                    type: 'fill',
+                    source: sourceId,
+                    layout: {},
+                    paint: {
+                        'fill-color': isoColor[i],
+                        'fill-opacity': 0.3
+                    }
+                }, 'building-layer');
+            }
+        }
     });
+
+    // Add updateIsochrones function
+    async function updateIsochrones() {
+        const layerCount = parseInt(document.getElementById('total_layers_select').value);
+        const center = isoMarker.getLngLat();
+
+        for (let i = 0; i < 5; i++) { 
+            const sourceId = `iso-${i}`;
+            if (i < layerCount) {
+                const duration = isoDurations[i];
+                const response = await fetch(
+                    `${isoBaseUrl}${center.lng},${center.lat}?contours_minutes=${duration}&polygons=true&access_token=${mapboxgl.accessToken}`
+                );
+                const data = await response.json();
+                if (map.getSource(sourceId)) {
+                    map.getSource(sourceId).setData(data);
+                    map.setLayoutProperty(`isoLayer-${i}`, 'visibility', 'visible');
+                }
+            } else {
+                if (map.getSource(sourceId)) {
+                    map.getSource(sourceId).setData({ type: 'FeatureCollection', features: [] });
+                    map.setLayoutProperty(`isoLayer-${i}`, 'visibility', 'none');
+                }
+            }
+        }
+    }
 
     // Form submission handler
     document.querySelector('form').addEventListener('submit', function (e) {
@@ -488,6 +547,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => {
             updateLayerVisibility();
             updateParameters();
+            updateIsochrones();
             fetch('/api/metrics')
                 .then(response => response.json())
                 .then(data => {
@@ -522,15 +582,6 @@ function toggleDarkLight() {
         switchView('light-v10');
         toggleButton.innerText = 'Light';
     }
-}
-
-function setLayer(layer) {
-    document.getElementById("total_layers").value = layer;
-    localStorage.setItem("selectedLayer", layer);
-    console.log("layer value is : " + typeof(layer) + layer);
-    console.log(localStorage.getItem('selectedLayer'));
-    updateLayerVisibility(); // Update immediately on selection
-    document.getElementById('total_layers_select').value = layer;
 }
 
 function syncSlider(id) {
@@ -1199,7 +1250,68 @@ const roads = {
             }
         }
 
-
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector('form');
+        
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitForm();
+        });
+    
+        function submitForm() {
+            const formData = new FormData(form);
+    
+            fetch('/results', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' 
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateParametersTable(data); // Update the table
+                updateIsochrones(); 
+                updateLayerVisibility();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    
+        // Add event listners
+        const autoUpdateElements = [
+            '#total_layers_select',  
+            '#resourceType',         
+            '#attackTypes',   
+            '#weekdaySelect',          
+            '#time-slider-main',        
+            '#C_bar_init'              
+        ];
+    
+        autoUpdateElements.forEach(selector => {
+            document.querySelector(selector).addEventListener('change', submitForm);
+        });
+    });
+    
+    // Update the parameters 
+    function updateParametersTable(data) {
+        const tableBody = document.getElementById('parametersTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+    
+        const order = ['vulnerability', 'threat', 'consequence', 'risk', 'investment'];
+        order.forEach(key => {
+            if (data[key]) {
+                const row = tableBody.insertRow();
+                const keyCell = row.insertCell(0);
+                keyCell.textContent = key.charAt(0).toUpperCase() + key.slice(1);
+    
+                data[key].forEach((value, index) => {
+                    const valueCell = row.insertCell(index + 1);
+                    valueCell.textContent = typeof value === 'number' ? value.toFixed(2) : value;
+                });
+            }
+        });
+    }
     </script>
+
 </body>
 </html>
