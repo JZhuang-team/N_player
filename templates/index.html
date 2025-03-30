@@ -150,7 +150,8 @@
                 <!-- Heatmap Button -->
                 <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
 
-                <!-- Heatmap Weekday Dropdown -->
+                <!--
+                   
                 <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
                     <label for="weekday-dropdown"><b>Weekday:</b></label>
                     <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
@@ -162,12 +163,15 @@
                     </select>
                 </div>
 
-                <!-- Heatmap Time Slider -->
+                
                 <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
                     <label for="time-slider"><b>Time:</b></label>
                     <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
                     <span id="time-display">8:00</span>
                 </div>
+
+                -->
+                
             </div>
 
         </div>
@@ -234,6 +238,9 @@
             timeSlider.addEventListener("input", function () {
                 updateTimeDisplay(this.value);
             });
+
+            initSharedControls();
+            submitForm();
         });
     </script>
     
@@ -390,20 +397,26 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiZG9yamVlbGEiLCJhIjoiY20yZjV0ajVjMDVuNjJycHU5cmVoaWgzNSJ9.sKLqnfQLnaIrXYKpfht6aw';
 
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
-    center: [-78.786058, 43.001150],
-    zoom: 16
-});
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/dorjeela/cm2f5v601008p01nxfdd725ms',
+            center: [-78.786058, 43.001150],
+        });
 
-// Isochrone Configuration
-const isoBaseUrl = 'https://api.mapbox.com/isochrone/v1/mapbox/walking/';
-    const isoDurations = [1, 2, 3, 4, 5];
-    const isoColor = ['#5a3fc0', '#3f6cbf', '#2ca6c4', '#2fcb9b', '#a4e35c'];
-    const isoMarker = new mapboxgl.Marker({ color: "#314ccd" })
-        .setLngLat([-78.786182985, 43.001148178])
-        .addTo(map);
+        setTimeout(() => {
+            map.flyTo({
+                center: [-78.787, 43],
+                zoom: 15,
+            });
+        }, 1000);
+
+        // Isochrone Configuration
+        const isoBaseUrl = 'https://api.mapbox.com/isochrone/v1/mapbox/walking/';
+            const isoDurations = [1, 2, 3, 4, 5];
+            const isoColor = ['#5a3fc0', '#3f6cbf', '#2ca6c4', '#2fcb9b', '#a4e35c'];
+            const isoMarker = new mapboxgl.Marker({ color: "#314ccd" })
+                .setLngLat([-78.786182985, 43.001148178])
+                .addTo(map);
 
 document.addEventListener('DOMContentLoaded', function () {
     map.on('load', function () {
@@ -786,7 +799,7 @@ const roads = {
             })
             .catch(error => console.error('Error fetching metrics:', error));
 
-
+            /*
              // listeners for the buttons
             document.querySelector(".top-right-buttons").addEventListener("click", function(event) {
                 if (event.target.tagName === 'BUTTON') {
@@ -800,6 +813,7 @@ const roads = {
                     }
                 }
             });
+            */
 
             function fetchData(dataType) {
                 fetch('/api/metrics')
@@ -954,12 +968,52 @@ const roads = {
         let currentTime = "8:00";; // Default hour
         let currentWeekday = "Monday";
 
+        // Initialize with form values
+        function initSharedControls() {
+            currentTime = document.getElementById('time-slider-main').value;
+            currentWeekday = document.getElementById('weekdaySelect').value;
+            updateTimeDisplay(currentTime);
+        }
+
+        // Unified update functions
+        function updateSharedTime(value) {
+            const hours = Math.floor(value);
+            const minutes = (value % 1) * 60;
+            currentTime = `${hours}:${minutes.toString().padStart(2, '0')}`;
+            document.getElementById('time-display-main').textContent = currentTime;
+            
+            // Update heatmap if visible
+            if (heatmapVisible) {
+                addHeatmapLayer();
+            }
+        }
+
+        function updateSharedWeekday(value) {
+            currentWeekday = value;
+            
+            // Update heatmap if visible
+            if (heatmapVisible) {
+                addHeatmapLayer();
+            }
+        }
+
+        // Event listeners for main controls
+        document.getElementById('weekdaySelect').addEventListener('change', function(e) {
+            updateSharedWeekday(e.target.value);
+            submitForm(); // Trigger form submission
+        });
+
+        document.getElementById('time-slider-main').addEventListener('input', function(e) {
+            updateSharedTime(e.target.value);
+            submitForm(); // Trigger form submission
+        });
+
         // Fetch CSV Data from Flask API
         fetch('/api/student-density')
             .then(response => response.json())
             .then(data => {
                     studentDensityData = data;
-                    //console.log("Fetched Data:", studentDensityData);
+                    console.log("Fetched Data:", studentDensityData);
                     processCSVData(studentDensityData);
                 })
             .catch(error => console.error('Error fetching CSV data:', error));
@@ -1014,7 +1068,7 @@ const roads = {
                     "fill-color": "grey",
                     "fill-opacity": 0.4
                     }
-                });
+                }), 'building-layer';
             }
 
             let buildingFeatures = map.querySourceFeatures('buildings-heatmap', {
@@ -1181,6 +1235,15 @@ const roads = {
                     features: features
                 });
             }
+
+            if (!map.isSourceLoaded('buildings-heatmap')) {
+                map.once('sourcedata', function(e) {
+                    if (e.sourceId === 'buildings-heatmap' && e.isSourceLoaded) {
+                        addHeatmapLayer();
+                    }
+                });
+                return;
+            }
         }
 
         function removeHeatmapLayer() {
@@ -1203,21 +1266,21 @@ const roads = {
         function toggleHeatmap() {
             heatmapVisible = !heatmapVisible;
 
-            const dropdownContainer = document.getElementById('weekday-dropdown-container');
-            const sliderContainer = document.getElementById("time-slider-container")
+            // const dropdownContainer = document.getElementById('weekday-dropdown-container');
+            // const sliderContainer = document.getElementById("time-slider-container")
             const button = document.getElementById("toggle-heatmap-btn")
             const heatmapLegend = document.getElementById('heatmap-legend');
 
             if (heatmapVisible) {
-                dropdownContainer.style.display = "block";
-                sliderContainer.style.display = "block";
+                // dropdownContainer.style.display = "block";
+                // sliderContainer.style.display = "block";
                 heatmapLegend.style.display = 'block';
                 button.innerText = "Hide Heatmap";
                 button.classList.add("active");
                 addHeatmapLayer();
             } else {
-                dropdownContainer.style.display = "none";
-                sliderContainer.style.display = "none";
+                // dropdownContainer.style.display = "none";
+                // sliderContainer.style.display = "none";
                 heatmapLegend.style.display = 'none';
                 button.innerText = "Show Heatmap";
                 button.classList.remove("active");

@@ -544,7 +544,7 @@ def results():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'GET':
-        return render_template('home.html')
+        return render_template('index.html')
     else:
         return redirect(url_for('results'))
 
