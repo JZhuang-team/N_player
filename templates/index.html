@@ -149,29 +149,6 @@
             <div id="heatmap-controls">
                 <!-- Heatmap Button -->
                 <button id="toggle-heatmap-btn" class="btn mt-3" onclick="toggleHeatmap()">Show Heatmap</button>
-
-                <!--
-                   
-                <div id="weekday-dropdown-container" style="display: none; position: absolute; bottom: 290px; left: 10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
-                    <label for="weekday-dropdown"><b>Weekday:</b></label>
-                    <select id="weekday-dropdown" onchange="updateWeekday(this.value)">
-                        <option value="Monday">Monday</option>
-                        <option value="Tuesday">Tuesday</option>
-                        <option value="Wednesday">Wednesday</option>
-                        <option value="Thursday">Thursday</option>
-                        <option value="Friday">Friday</option>
-                    </select>
-                </div>
-
-                
-                <div id="time-slider-container" style="display: none; position:absolute; left:10px; background:white; padding:10px; border-radius:5px; z-index:1000; margin-top: 10px;">
-                    <label for="time-slider"><b>Time:</b></label>
-                    <input type="range" id="time-slider" min="8" max="22" step="0.25" value="8" oninput="updateTime(this.value)">
-                    <span id="time-display">8:00</span>
-                </div>
-
-                -->
-                
             </div>
 
         </div>
@@ -799,22 +776,6 @@ const roads = {
             })
             .catch(error => console.error('Error fetching metrics:', error));
 
-            /*
-             // listeners for the buttons
-            document.querySelector(".top-right-buttons").addEventListener("click", function(event) {
-                if (event.target.tagName === 'BUTTON') {
-                    const metric = event.target.innerText.toLowerCase();
-
-                    // Redirect to a relative path for "mainpage"
-                    if (metric === 'mainpage') {
-                        window.location.href = 'index.html'; // Relative path to your HTML file
-                    } else {
-                        applyMetric(metric);
-                    }
-                }
-            });
-            */
-
             function fetchData(dataType) {
                 fetch('/api/metrics')
                     .then(response => response.json())
@@ -1266,21 +1227,15 @@ const roads = {
         function toggleHeatmap() {
             heatmapVisible = !heatmapVisible;
 
-            // const dropdownContainer = document.getElementById('weekday-dropdown-container');
-            // const sliderContainer = document.getElementById("time-slider-container")
             const button = document.getElementById("toggle-heatmap-btn")
             const heatmapLegend = document.getElementById('heatmap-legend');
 
             if (heatmapVisible) {
-                // dropdownContainer.style.display = "block";
-                // sliderContainer.style.display = "block";
                 heatmapLegend.style.display = 'block';
                 button.innerText = "Hide Heatmap";
                 button.classList.add("active");
                 addHeatmapLayer();
             } else {
-                // dropdownContainer.style.display = "none";
-                // sliderContainer.style.display = "none";
                 heatmapLegend.style.display = 'none';
                 button.innerText = "Show Heatmap";
                 button.classList.remove("active");
