@@ -255,8 +255,8 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
         print(" ", row)
 
     base_beta = [
-        [0.2, 0.3, 0.4, 0.5, 0.6],
-        [0.25, 0.35, 0.45, 0.55, 0.65],
+        [0.53, 0.3, 0.4, 0.5, 0.6],
+        [0.47, 0.35, 0.45, 0.55, 0.65],
         [0.3, 0.4, 0.5, 0.6, 0.7],
         [0.35, 0.45, 0.55, 0.65, 0.75],
         [0.4, 0.5, 0.6, 0.7, 0.8]
@@ -265,8 +265,8 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     beta_2d = [[row[a] for a in selected_attack_types] for row in beta_2d]
 
     base_alpha = [
-        [0.9, 0.8, 0.7, 0.6, 0.5],
-        [0.6, 0.7, 0.8, 0.9, 0.4],
+        [0.79, 0.8, 0.7, 0.6, 0.5],
+        [0.71, 0.7, 0.8, 0.9, 0.4],
         [0.5, 0.5, 0.6, 0.7, 0.8],
         [0.8, 0.5, 0.7, 0.5, 0.5],
         [0.4, 0.6, 0.7, 0.8, 0.9]
@@ -275,8 +275,8 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     alpha_2d = [[row[a] for a in selected_attack_types] for row in alpha_2d]
 
     base_gamma = [
-        [1.0,  0.9,  0.5,  0.5, 0.8],
-        [0.92, 1.0,  0.6,  0.3, 0.7],
+        [0.6,  0.9,  0.5,  0.5, 0.8],
+        [0.6, 1.0,  0.6,  0.3, 0.7],
         [0.91, 0.92, 1.0,  0.6, 0.4],
         [0.45, 0.38, 0.63, 1.0, 0.93],
         [0.51, 0.82, 0.79, 0.66, 1.0]
@@ -284,8 +284,8 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     gamma_2d = [row[:nLayers] for row in base_gamma[:nLayers]]
 
     base_theta = [
-        [0.94, 0.92],
-        [0.71, 0.93],
+        [0.70, 0.92],
+        [0.80, 0.93],
         [0.92, 0.62],
         [0.54, 0.65],
         [0.98, 0.32]
