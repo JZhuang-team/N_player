@@ -240,8 +240,8 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     print(f"The student number for {building_name} at {time_value} on {weekday_value} is: {final_count}")
 
     base_s = [
-        [10, 15, 20, 25, 30],
-        [12, 18, 24, 30, 36],
+        [28, 15, 20, 25, 30],
+        [48, 18, 24, 30, 36],
         [14, 21, 28, 35, 42],
         [16, 24, 32, 40, 48],
         [18, 27, 36, 45, 54]
@@ -284,17 +284,17 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     gamma_2d = [row[:nLayers] for row in base_gamma[:nLayers]]
 
     base_theta = [
-        [0.70, 0.92],
-        [0.80, 0.93],
-        [0.92, 0.62],
-        [0.54, 0.65],
-        [0.98, 0.32]
+        [0.070, 0.092],
+        [0.080, 0.093],
+        [0.092, 0.062],
+        [0.054, 0.065],
+        [0.098, 0.032]
     ]
     theta_2d = [[row[r] for r in selected_resource_types] for row in base_theta[:nLayers]]
 
     cost_2d = [
-        [2.94, 2.92],
-        [2.71, 2.93],
+        [1.70, 2.92],
+        [2.20, 2.93],
         [2.92, 2.62],
         [2.54, 2.65],
         [2.98, 2.32]
