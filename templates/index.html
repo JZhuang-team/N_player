@@ -66,15 +66,15 @@
                     <div class="form-group">
                         <label for="total_layers_select" class="sidebarHeaders">Number of Layers:</label>
                         <select class="form-control" id="total_layers_select" name="total_layers_select">
-                            <option value="">Select number of layers</option>
-                            <option value="1" selected>1 Layer</option>
+                            <option value="0" selected>Select number of layers</option>
+                            <option value="1">1 Layer</option>
                             <option value="2">2 Layers</option>
                             <option value="3">3 Layers</option>
                             <option value="4">4 Layers</option>
                             <option value="5">5 Layers</option>
 
                         </select>
-                        <input type="hidden" name="total_layers" id="total_layers" value="1">
+                        <input type="hidden" name="total_layers" id="total_layers" value="0">
                     </div>
                     
                     <div class="resource-type">
@@ -114,7 +114,7 @@
 
                     <!-- Cost slider -->
                     <div class="form-group">
-                        <label for="C_bar_init" class="sidebarHeaders">Resource (K/$):</label>
+                        <label for="C_bar_init" class="sidebarHeaders">Resource (K$):</label>
                         <div class="slider-container">
                           <input type="range" class="slider" name="C_bar_init" id="C_bar_init" min="0" max="500" step="5" value="0" oninput="syncSlider('C_bar_init')">
                           <input type="number" id="C_bar_init_input" min="0" max="500" value="0" step="5" oninput="syncInput('C_bar_init')">
@@ -268,7 +268,7 @@
             if (savedLayer !== null) {
                 document.getElementById('total_layers').value = savedLayer;
                 document.getElementById('total_layers_select').value = savedLayer;
-                updateLayerVisibility();
+                // updateLayerVisibility();
             }
     
         // Fetch data 
@@ -398,7 +398,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     map.on('load', function () {
         addMapLayersAndSources();
-        updateLayerVisibility();
+        // updateLayerVisibility();
         updateIsochrones();
 
         const savedValue = localStorage.getItem('C_bar_init');
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         setTimeout(() => {
-            updateLayerVisibility();
+            // updateLayerVisibility();
             updateParameters();
             updateIsochrones();
             fetch('/api/metrics')
@@ -630,7 +630,7 @@ function switchView(styleId) {
     map.setStyle(styleUrl);
     map.on('style.load', function () {
         addMapLayersAndSources();
-        updateLayerVisibility();
+        // updateLayerVisibility();
     });
 }
 
@@ -666,6 +666,7 @@ const buildings = {
             "geometry": {
                 "coordinates": [
                     [
+                        /*
                         [-78.786683, 43.001566],
                         [-78.786266, 43.001567],
                         [-78.786266, 43.001514],
@@ -684,6 +685,7 @@ const buildings = {
                         [-78.786571, 43.001266],
                         [-78.78668, 43.001265],
                         [-78.786683, 43.001566]
+                        */
                     ]
                 ],
                 "type": "Polygon"
@@ -700,6 +702,7 @@ const roads = {
     },
     "geometry": {
         "coordinates": [
+            /*
             [-78.785381, 42.999812],
             [-78.785388, 43.001257],
             [-78.785459, 43.001387],
@@ -748,6 +751,7 @@ const roads = {
             [-78.786405, 42.999806],
             [-78.786149, 42.999815],
             [-78.785376, 42.999812]
+            */
         ],
         "type": "LineString"
     }
@@ -1294,7 +1298,7 @@ const roads = {
             .then(data => {
                 updateParametersTable(data); // Update the table
                 updateIsochrones(); 
-                updateLayerVisibility();
+                // updateLayerVisibility();
             })
             .catch(error => console.error('Error:', error));
         }

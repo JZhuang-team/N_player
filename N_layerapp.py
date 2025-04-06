@@ -63,7 +63,7 @@ def compute_layer_risk(Y_2d, obj):
     risk_2d = []
     for i in range(nLayers):
         exponent_i = 0.0
-        for k in range(i + 1):
+        for k in range(i, obj.nLayers):
             for j in range(mFactors):
                 exponent_i += obj.gamma[k][i] * obj.theta[k][j] * Y_2d[k][j]
         row_risk = []
@@ -240,11 +240,11 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     print(f"The student number for {building_name} at {time_value} on {weekday_value} is: {final_count}")
 
     base_s = [
-        [28, 15, 20, 25, 30],
-        [48, 18, 24, 30, 36],
-        [14, 21, 28, 35, 42],
-        [16, 24, 32, 40, 48],
-        [18, 27, 36, 45, 54]
+        [20, 20 , 20, 20, 20],
+        [20, 20 , 20, 20, 20],
+        [20, 20 , 20, 20, 20],
+        [20, 20 , 20, 20, 20],
+        [20, 20 , 20, 20, 20]
     ]
     s_2d = [[final_count * val for val in row] for row in base_s]
     s_2d = [row[:] for row in s_2d[:nLayers]] 
@@ -255,49 +255,49 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
         print(" ", row)
 
     base_beta = [
-        [0.53, 0.3, 0.4, 0.5, 0.6],
-        [0.47, 0.35, 0.45, 0.55, 0.65],
-        [0.3, 0.4, 0.5, 0.6, 0.7],
-        [0.35, 0.45, 0.55, 0.65, 0.75],
-        [0.4, 0.5, 0.6, 0.7, 0.8]
+        [0.2,  0.2, 0.2,  0.2, 0.2],
+        [0.2,  0.2, 0.2,  0.2, 0.2],
+        [0.2,  0.2, 0.2,  0.2, 0.2],
+        [0.2,  0.2, 0.2,  0.2, 0.2],
+        [0.2,  0.2, 0.2,  0.2, 0.2]
     ]
     beta_2d = [row[:] for row in base_beta[:nLayers]]
     beta_2d = [[row[a] for a in selected_attack_types] for row in beta_2d]
 
     base_alpha = [
-        [0.79, 0.8, 0.7, 0.6, 0.5],
-        [0.71, 0.7, 0.8, 0.9, 0.4],
-        [0.5, 0.5, 0.6, 0.7, 0.8],
-        [0.8, 0.5, 0.7, 0.5, 0.5],
-        [0.4, 0.6, 0.7, 0.8, 0.9]
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0]
     ]
     alpha_2d = [row[:] for row in base_alpha[:nLayers]]
     alpha_2d = [[row[a] for a in selected_attack_types] for row in alpha_2d]
 
     base_gamma = [
-        [0.6,  0.9,  0.5,  0.5, 0.8],
-        [0.6, 1.0,  0.6,  0.3, 0.7],
-        [0.91, 0.92, 1.0,  0.6, 0.4],
-        [0.45, 0.38, 0.63, 1.0, 0.93],
-        [0.51, 0.82, 0.79, 0.66, 1.0]
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0],
+        [1.0,  1.0,  1.0,  1.0, 1.0]
     ]
     gamma_2d = [row[:nLayers] for row in base_gamma[:nLayers]]
 
     base_theta = [
-        [0.070, 0.092],
-        [0.080, 0.093],
-        [0.092, 0.062],
-        [0.054, 0.065],
-        [0.098, 0.032]
+        [0.050, 0.050],
+        [0.050, 0.050],
+        [0.050, 0.050],
+        [0.050, 0.050],
+        [0.050, 0.050]
     ]
     theta_2d = [[row[r] for r in selected_resource_types] for row in base_theta[:nLayers]]
 
     cost_2d = [
-        [1.70, 2.92],
-        [2.20, 2.93],
-        [2.92, 2.62],
-        [2.54, 2.65],
-        [2.98, 2.32]
+        [2.0, 2.0],
+        [2.0, 2.0],
+        [2.0, 2.0],
+        [2.0, 2.0],
+        [2.0, 2.0]
     ]
     cost_2d = [[row[r] for r in selected_resource_types] for row in cost_2d[:nLayers]]
 
@@ -381,6 +381,8 @@ def boston_transit_logic(C, A, time_period):
             "attractiveness_score": v[i],
             "attack_probability": f"{a_optimal[i]*100:.2f}%",
             "defender_success_probability": f"{P_defender[i]*100:.2f}%",
+            "lon": row["Lon"],
+            "lat": row["Lat"],
             "is_attacked": station_name in chosen_station_names_set
         })
 
@@ -513,7 +515,10 @@ def results():
         # Calculate consequence 
         consequence = [sum(row) for row in obj_base.s] 
         # Calculate threat 
-        threat = [sum(row) for row in obj_base.beta]
+        # threat = [sum(row) for row in obj_base.beta]
+        nLayers = obj_base.nLayers
+        threat = [1.0 / nLayers] * nLayers
+
         # Calculate vulnerability
         vulnerability_matrix = compute_vulnerability_matrix(obj_base, Y_opt_2d, selected_attacks, selected_resource)
         print("The vulnerability matrix is: " + str(vulnerability_matrix))
@@ -568,9 +573,40 @@ def get_station_data():
 
 @app.route('/get_heatmap_data', methods=['GET'])
 def heatmap():
-     time_period = request.args.get("time_period", "")
-     return jsonify(get_all_locations_geojson(time_period))
+    time_period = request.args.get("time_period", "")
+    heatmap_type = request.args.get("heatmap_type", "attractiveness")
+    C_bar = float(request.args.get("C_bar", 0))
+    num_attacks = int(request.args.get("A", 0))
+    station_data = boston_transit_logic(C=C_bar, A=num_attacks, time_period=time_period)
+    
+    features = []
+    for station in station_data:
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [station["lon"], station["lat"]]
+            },
+            "properties": {
+                "station_name": station["station_name"],
+                "value": get_heatmap_value(station, heatmap_type)
+            }
+        }
+        features.append(feature)
+    
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+    return jsonify(geojson)
 
+def get_heatmap_value(station, heatmap_type):
+    if heatmap_type == "attack_probability":
+        return float(station["attack_probability"].replace('%', '')) / 100
+    elif heatmap_type == "defense_allocation":
+        return float(station["defense_allocation"].replace(' K$', ''))
+    else:  # attractiveness
+        return station["attractiveness_score"]
 
 @app.route('/data/markers')
 def get_markers():

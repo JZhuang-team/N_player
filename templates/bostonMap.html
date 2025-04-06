@@ -57,10 +57,17 @@
                                 value="{{ num_attacks }}" step="1" oninput="syncInput('num_attacks')">
                         </div>
                     </div>
-                </br></br>
-                <div>
-                    <button id="toggleHeatmap" class="btn btn-primary" style="background-color: green;">Show Heatmap</button>
-                </div>
+                    <div class="form-group">
+                        <label for="Heatmap" class="sidebarHeaders">Heatmap Types</label>
+                        <select id="heatmapType" class="form-control">
+                            <option value="attractiveness">Attractiveness Score</option>
+                            <option value="attack_probability">Attack Probability</option>
+                            <option value="defense_allocation">Defense Allocation</option>
+                        </select>
+                        </br>
+                        <button id="toggleHeatmap" class="btn btn-primary" style="background-color: green;">Show Heatmap</button>
+                    </div>
+                        
                 
                 </form>
             </div>
@@ -142,28 +149,32 @@
                 };
             };
 
-            // Fetch data and update UI
             const fetchStationData = debounce(() => {
                 const timePeriod = document.getElementById('resourceType').value;
                 const budget = document.getElementById('C_bar_init').value;
                 const numAttacks = document.getElementById('num_attacks').value;
+                const heatmapType = document.getElementById('heatmapType').value;
 
+                // Update station data
                 fetch(`/get_station_data?resource_type=${encodeURIComponent(timePeriod)}&C_bar_init=${budget}&num_attacks=${numAttacks}`)
                     .then(response => response.json())
                     .then(data => {
                         stationData = data;
                         updateMapAndTable(data);
+                        return fetch(`/get_heatmap_data?time_period=${encodeURIComponent(timePeriod)}&heatmap_type=${heatmapType}&C_bar=${budget}&A=${numAttacks}`)
+                            .then(response => response.json())
+                            .then(geojsonData => {
+                                if (map.getSource('heatmap-source')) {
+                                    map.getSource('heatmap-source').setData(geojsonData);
+                                }
+                                if (map.getLayoutProperty('heatmap-layer', 'visibility') === 'visible') {
+                                    map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
+                                    map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
+                                }
+                            })
+                            .catch(error => console.error('Error loading heatmap data:', error));
                     })
                     .catch(error => console.error('Error:', error));
-
-                fetch(`/get_heatmap_data?time_period=${encodeURIComponent(timePeriod)}`)
-                    .then(response => response.json())
-                    .then(geojsonData => {
-                        if (map.getSource('heatmap-source')) {
-                            map.getSource('heatmap-source').setData(geojsonData);
-                        }
-                    })
-                    .catch(error => console.error('Error loading heatmap data:', error));
             });
 
 
@@ -200,6 +211,11 @@
             document.getElementById('resourceType').addEventListener('change', fetchStationData);
             document.getElementById('C_bar_init').addEventListener('input', fetchStationData);
             document.getElementById('num_attacks').addEventListener('input', fetchStationData);
+            document.getElementById('heatmapType').addEventListener('change', () => {
+                if (map.getLayoutProperty('heatmap-layer', 'visibility') === 'visible') {
+                    fetchStationData();
+                }
+            });
             document.querySelector('form').addEventListener('submit', (e) => e.preventDefault());
 
             fetchStationData();
@@ -220,21 +236,19 @@
 
             map.addSource('heatmap-source', {
                  type: 'geojson',
-                 data: `/get_heatmap_data?time_period=${document.getElementById('resourceType').value}`, // This endpoint should return GeoJSON data
+                 data: { type: 'FeatureCollection', features: [] }
              });
                  
              map.addLayer({
                  id: 'heatmap-layer',
                  type: 'heatmap',
                  source: 'heatmap-source',
-                 layout: { visibility: 'none' }, // Initially hidden
+                 layout: { visibility: 'none' },  
                  paint: {
                      'heatmap-weight': ['interpolate',
                      ['linear'],
-                     ['get', 'attractiveness_score'],
+                     ['get', 'value'],
                      0, 0,
-                     0.2, 0.1,
-                     0.5, 0.4,
                      1, 1],
                      'heatmap-intensity': 1,
                      'heatmap-color': [
@@ -306,17 +320,18 @@
             });
         });
 
-        document.getElementById('toggleHeatmap').addEventListener('click', function () {
-             let visibility = map.getLayoutProperty('heatmap-layer', 'visibility');
-             
-             if (visibility === 'none') {
-                 map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
-                 this.textContent = 'Hide Heatmap';
-             } else {
-                 map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
-                 this.textContent = 'Show Heatmap';
-             }
-         });
+        document.getElementById('toggleHeatmap').addEventListener('click', function() {
+            const visibility = map.getLayoutProperty('heatmap-layer', 'visibility');
+            if (visibility === 'visible') {
+                map.setLayoutProperty('heatmap-layer', 'visibility', 'none');
+                this.textContent = 'Show Heatmap';
+            } else {
+                map.setLayoutProperty('heatmap-layer', 'visibility', 'visible');
+                this.textContent = 'Hide Heatmap';
+                // Trigger data update
+                fetchStationData();
+            }
+        });
     </script>
     
 </body>
