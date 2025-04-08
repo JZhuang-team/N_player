@@ -63,7 +63,7 @@ def compute_layer_risk(Y_2d, obj):
     risk_2d = []
     for i in range(nLayers):
         exponent_i = 0.0
-        for k in range(i, obj.nLayers):
+        for k in range(i+1):
             for j in range(mFactors):
                 exponent_i += obj.gamma[k][i] * obj.theta[k][j] * Y_2d[k][j]
         row_risk = []

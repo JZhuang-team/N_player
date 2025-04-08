@@ -44,15 +44,6 @@
 
                 <!-- Model selection form -->
                 <form action="/results" method="post">
-                    <!-- Model Type selection -->
-                    <div class="form-group">
-                        <!--
-                        <div class="custom-control custom-radio mt-2">
-                            <input type="radio" id="stra" name="model_type" class="custom-control-input" value="stra">
-                            <label class="custom-control-label" for="stra">Strategic Model</label>
-                        </div>
-                        -->
-                    </div>
                     
                     <div class="form-group">
                         <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
@@ -1057,12 +1048,7 @@ const roads = {
                     }
                 }
 
-                //console.log("geometry type:", buildingFeatures[0].geometry.type);
-                //console.log("geometry coordinates:", buildingFeatures[0].geometry.coordinates[0]);
-
-            }).filter(feature => feature !== null); // Remove null entries
-
-            //console.log("Features after mapping:", features);
+            }).filter(feature => feature !== null); 
 
             if (!map.getSource('heatmap')) {
                 map.addSource('heatmap', {
