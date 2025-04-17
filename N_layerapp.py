@@ -261,8 +261,12 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
         [0.2,  0.2, 0.2,  0.2, 0.2],
         [0.2,  0.2, 0.2,  0.2, 0.2]
     ]
-    beta_2d = [row[:] for row in base_beta[:nLayers]]
-    beta_2d = [[row[a] for a in selected_attack_types] for row in beta_2d]
+    # beta_2d = [row[:] for row in base_beta[:nLayers]]
+    # beta_2d = [[row[a] for a in selected_attack_types] for row in beta_2d]
+
+    beta_2d = [[row[a] for a in selected_attack_types] for row in base_beta[:nLayers]]
+    total_sum = sum(sum(row) for row in beta_2d)
+    beta_2d = [[val / total_sum for val in row] for row in beta_2d]
 
     base_alpha = [
         [1.0,  1.0,  1.0,  1.0, 1.0],
@@ -275,11 +279,11 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     alpha_2d = [[row[a] for a in selected_attack_types] for row in alpha_2d]
 
     base_gamma = [
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0]
+        [1.0, 0.5, 0.25, 0.125, 0.0625],
+        [1.0, 1.0, 0.5,  0.25,  0.125],
+        [1.0, 1.0, 1.0,  0.5,   0.25],
+        [1.0, 1.0, 1.0,  1.0,   0.5],
+        [1.0, 1.0, 1.0,  1.0,   1.0]
     ]
     gamma_2d = [row[:nLayers] for row in base_gamma[:nLayers]]
 
@@ -515,9 +519,9 @@ def results():
         # Calculate consequence 
         consequence = [sum(row) for row in obj_base.s] 
         # Calculate threat 
-        # threat = [sum(row) for row in obj_base.beta]
-        nLayers = obj_base.nLayers
-        threat = [1.0 / nLayers] * nLayers
+        threat = [sum(row) for row in obj_base.beta]
+        # nLayers = obj_base.nLayers
+        # threat = [1.0 / nLayers] * nLayers
 
         # Calculate vulnerability
         vulnerability_matrix = compute_vulnerability_matrix(obj_base, Y_opt_2d, selected_attacks, selected_resource)
