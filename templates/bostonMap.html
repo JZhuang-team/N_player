@@ -82,9 +82,9 @@
             <table class="station-table">
                 <thead>
                     <tr>
-                        <th>Station Name</th>
-                        <th>Defense Allocation</th>
-                        <th>Attack Probability</th>
+                        <th onclick="sortTable(0)">Station Name <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(1)">Defense Allocation <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(2)">Attack Probability <i class="fas fa-sort"></i></th>
                     </tr>
                 </thead>
                 <tbody id="station-table-body">
@@ -303,6 +303,57 @@
             slider.dispatchEvent(new Event('input'));
         }
 
+        let currentSortColumn = -1;
+            let sortDirection = 1;
+
+            function sortTable(columnIndex) {
+                const tableBody = document.getElementById('station-table-body');
+                const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+                // Toggle direction if clicking the same column
+                if (currentSortColumn === columnIndex) {
+                    sortDirection *= -1;
+                } else {
+                    currentSortColumn = columnIndex;
+                    sortDirection = 1;
+                }
+
+                rows.sort((a, b) => {
+                    const aValue = a.cells[columnIndex].textContent;
+                    const bValue = b.cells[columnIndex].textContent;
+
+                    // Try to convert to number if possible
+                    const aNum = parseFloat(aValue);
+                    const bNum = parseFloat(bValue);
+
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return (aNum - bNum) * sortDirection;
+                    }
+
+                    // Fall back to string comparison
+                    return aValue.localeCompare(bValue) * sortDirection;
+                });
+
+                // Clear and re-add sorted rows
+                tableBody.innerHTML = '';
+                rows.forEach(row => tableBody.appendChild(row));
+
+                // Update sort indicators
+                updateSortIndicators(columnIndex);
+            }
+
+            function updateSortIndicators(columnIndex) {
+                const headers = document.querySelectorAll('.station-table th');
+                headers.forEach((header, index) => {
+                    header.innerHTML = header.innerHTML.replace(/<i class="fas fa-sort-(up|down)"><\/i>|<i class="fas fa-sort"><\/i>/g, '');
+                    if (index === columnIndex) {
+                        const iconClass = sortDirection === 1 ? 'fa-sort-up' : 'fa-sort-down';
+                        header.innerHTML += ` <i class="fas ${iconClass}"></i>`;
+                    } else {
+                        header.innerHTML += ` <i class="fas fa-sort"></i>`;
+                    }
+                });
+            }
         document.addEventListener("DOMContentLoaded", function () {
             let sliders = document.querySelectorAll(".slider");
             let numberInputs = document.querySelectorAll("input[type='number']");
