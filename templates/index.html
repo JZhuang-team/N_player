@@ -329,6 +329,7 @@
     
         // Fly + add marker
         let currMarkers = [];
+        /*
         function flyToLocation(coordinates) {
             currMarkers.forEach(marker => marker.remove());
             currMarkers = [];
@@ -338,6 +339,27 @@
 
             const marker = new mapboxgl.Marker({color: "#FF0000"}).setLngLat([lng, lat]).addTo(map);
 
+            currMarkers.push(marker);
+        }
+        */
+
+        function flyToLocation(coordinates) {
+            currMarkers.forEach(marker => marker.remove());
+            currMarkers = [];
+
+            const [lat, lng] = coordinates; 
+            map.flyTo({ center: [lng, lat], zoom: 15 });
+
+            // Update isoMarker position
+            isoMarker.setLngLat([lng, lat]);
+            
+            // Update isochrones with new position
+            updateIsochrones();
+
+            // Add new marker
+            const marker = new mapboxgl.Marker({color: "#FF0000"})
+                .setLngLat([lng, lat])
+                .addTo(map);
             currMarkers.push(marker);
         }
 
