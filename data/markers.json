@@ -22,8 +22,7 @@
 
     {"areas":["North Campus Area"],"campus":"North Campus","category":{"id":"academic","title":"Academic Buildings"},"keywords":["ACADEMIC"],"latlng":["43.0018552379192","-78.7848865362967"],"locationid":"Ubcmns","stateid":"A900","title":"UB Commons"},
 
-    {"areas":["North Campus Area"],"campus":"North Campus","category":{"id":"iconic","title":"Iconic Places"},"keywords":["ICONIC"],"latlng":["43.00072386","-78.79171834"],"locationid":"Nsc","stateid":null,"title":"Natural Sciences Complex - Photo Spot"}
-
+    {"areas":["North Campus Area"],"campus":"North Campus","category":{"id":"academic","title":"Academic Buildings"},"keywords":["ACADEMIC"],"latlng":["43.0006564772581","-78.7917243258946"],"locationid":"Nsc","stateid":"A550","title":"Natural Sciences Complex"}
     ]
 
 }
