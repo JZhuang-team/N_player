@@ -48,6 +48,7 @@
                     <div class="form-group">
                         <label class="sidebarHeaders" for="locationSearch">Buildings:</label>
                         <input type="text" class="form-control" id="locationSearch" placeholder="Search for a building...">
+                        <input type="hidden" id="locationid" name="locationid" value="Hoch">
                         <div class="dropdown">
                             <div class="dropdown-menu" id="locationDropdown" style="display: none; width: 100%; max-height: 200px; overflow-y: auto;"></div>
                         </div>
@@ -309,6 +310,7 @@
     
                 option.addEventListener('click', function () {
                     searchInput.value = location.title;  
+                    document.getElementById('locationid').value = location.id;
                     dropdownMenu.style.display = 'none';  
                     
                     // Log selected location's coordinates

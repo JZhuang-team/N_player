@@ -75,9 +75,6 @@ def compute_layer_risk(Y_2d, obj):
 
 
 def sum_risk(risk_2d):
-    """
-    Sums risk by layer and returns both the per-layer sums and the total risk.
-    """
     layer_sums = [sum(row) for row in risk_2d]
     total_risk = sum(layer_sums)
     return layer_sums, total_risk
@@ -97,9 +94,7 @@ def objective_prob(Y_flat, obj):
 
 
 def grad_objective(Y_flat, obj):
-    """
-    Computes the gradient of the objective function.
-    """
+    
     nLayers = obj.nLayers
     mFactors = obj.mFactors
     aTypes = obj.aTypes
@@ -240,12 +235,13 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     print(f"The student number for {building_name} at {time_value} on {weekday_value} is: {final_count}")
 
     base_s = [
-        [20, 20 , 20, 20, 20],
-        [20, 20 , 20, 20, 20],
-        [20, 20 , 20, 20, 20],
-        [20, 20 , 20, 20, 20],
-        [20, 20 , 20, 20, 20]
+        [28, 15, 20, 25, 30],
+        [48, 18, 24, 30, 36],
+        [14, 21, 28, 35, 42],
+        [16, 24, 32, 40, 48],
+        [18, 27, 36, 45, 54]
     ]
+
     s_2d = [[final_count * val for val in row] for row in base_s]
     s_2d = [row[:] for row in s_2d[:nLayers]] 
     s_2d = [[row[a] for a in selected_attack_types] for row in s_2d]
@@ -255,12 +251,13 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
         print(" ", row)
 
     base_beta = [
-        [0.2,  0.2, 0.2,  0.2, 0.2],
-        [0.2,  0.2, 0.2,  0.2, 0.2],
-        [0.2,  0.2, 0.2,  0.2, 0.2],
-        [0.2,  0.2, 0.2,  0.2, 0.2],
-        [0.2,  0.2, 0.2,  0.2, 0.2]
+        [0.53, 0.3, 0.4, 0.5, 0.6],
+        [0.47, 0.35, 0.45, 0.55, 0.65],
+        [0.3, 0.4, 0.5, 0.6, 0.7],
+        [0.35, 0.45, 0.55, 0.65, 0.75],
+        [0.4, 0.5, 0.6, 0.7, 0.8]
     ]
+
     # beta_2d = [row[:] for row in base_beta[:nLayers]]
     # beta_2d = [[row[a] for a in selected_attack_types] for row in beta_2d]
 
@@ -269,12 +266,13 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     beta_2d = [[val / total_sum for val in row] for row in beta_2d]
 
     base_alpha = [
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0],
-        [1.0,  1.0,  1.0,  1.0, 1.0]
+        [0.79, 0.8, 0.7, 0.6, 0.5],
+        [0.71, 0.7, 0.8, 0.9, 0.4],
+        [0.5, 0.5, 0.6, 0.7, 0.8],
+        [0.8, 0.5, 0.7, 0.5, 0.5],
+        [0.4, 0.6, 0.7, 0.8, 0.9]
     ]
+
     alpha_2d = [row[:] for row in base_alpha[:nLayers]]
     alpha_2d = [[row[a] for a in selected_attack_types] for row in alpha_2d]
 
@@ -288,21 +286,23 @@ def initialization_3d(nLayers, selected_attack_types, selected_resource_types, C
     gamma_2d = [row[:nLayers] for row in base_gamma[:nLayers]]
 
     base_theta = [
-        [0.050, 0.050],
-        [0.050, 0.050],
-        [0.050, 0.050],
-        [0.050, 0.050],
-        [0.050, 0.050]
+        [0.070, 0.092],
+        [0.080, 0.093],
+        [0.092, 0.062],
+        [0.054, 0.065],
+        [0.098, 0.032]
     ]
+
     theta_2d = [[row[r] for r in selected_resource_types] for row in base_theta[:nLayers]]
 
     cost_2d = [
-        [2.0, 2.0],
-        [2.0, 2.0],
-        [2.0, 2.0],
-        [2.0, 2.0],
-        [2.0, 2.0]
+        [1.70, 2.92],
+        [2.20, 2.93],
+        [2.92, 2.62],
+        [2.54, 2.65],
+        [2.98, 2.32]
     ]
+
     cost_2d = [[row[r] for r in selected_resource_types] for row in cost_2d[:nLayers]]
 
     return instance_nLY(s_2d, beta_2d, alpha_2d, theta_2d, gamma_2d, cost_2d, C_bar)
@@ -487,7 +487,7 @@ def results():
         selected_attacks = [attack_mapping[atk] for atk in attack_types]
 
         # Get additional parameters
-        building_name = request.form.get('selected_building', 'Hoch')
+        building_name = request.form.get('locationid')
 
         curTime = float(request.form.get('time', 8)) 
         time_value = f"{int(curTime)}:{int((curTime % 1) * 60):02d}"

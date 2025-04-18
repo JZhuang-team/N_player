@@ -485,8 +485,11 @@
                 let distance = closestMarkerInfo ? closestMarkerInfo.distance : Infinity;
                 let risk = 0;
 
+                // (0.7*(1-e^(-300d/64))+0.2) * s
+
                 if (distance !== Infinity && distance !== undefined) {
-                    risk = studentCount * distance;
+                    // risk = studentCount * distance;
+                    risk = ((0.7 * (1 - Math.E ** ((-300 * distance)/64)) + 0.2) * studentCount);
                 }
 
                 return {
